@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="ef0f2e3a-f752-4c67-a6c4-d128bd05f15b" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="importingSettings">
+      <MavenImportingSettings>
+        <option name="importAutomatically" value="true" />
+      </MavenImportingSettings>
+    </option>
+  </component>
+  <component name="ProjectId" id="1yTWAXPpNADb3Y5SID1Z168Y6cN" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="project.structure.last.edited" value="Modules" />
+    <property name="project.structure.proportion" value="0.15917969" />
+    <property name="project.structure.side.proportion" value="0.2" />
+    <property name="settings.editor.selected.configurable" value="configurable.group.appearance" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ef0f2e3a-f752-4c67-a6c4-d128bd05f15b" name="Default Changelist" comment="" />
+      <created>1632275914602</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1632275914602</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="2531" y="545" key="#Project_Structure" timestamp="1632326858055">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="2531" y="545" key="#Project_Structure/0.0.3440.1400@0.0.3440.1400" timestamp="1632326858055" />
+    <state x="1468" y="467" key="#com.intellij.ide.util.MemberChooser" timestamp="1632422720078">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1468" y="467" key="#com.intellij.ide.util.MemberChooser/0.0.3440.1400@0.0.3440.1400" timestamp="1632422720078" />
+    <state x="1915" y="0" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1632424614254">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1915" y="0" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/0.0.3440.1400@0.0.3440.1400" timestamp="1632424614254" />
+    <state x="1443" y="513" key="FileChooserDialogImpl" timestamp="1632410995514">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1443" y="513" key="FileChooserDialogImpl/0.0.3440.1400@0.0.3440.1400" timestamp="1632410995514" />
+    <state x="1143" y="332" key="SettingsEditor" timestamp="1632368507764">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1143" y="332" key="SettingsEditor/0.0.3440.1400@0.0.3440.1400" timestamp="1632368507764" />
+    <state x="1360" y="489" width="607" height="536" key="find.popup" timestamp="1632425308454">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1360" y="489" width="607" height="536" key="find.popup/0.0.3440.1400@0.0.3440.1400" timestamp="1632425308454" />
+    <state x="1326" y="376" width="672" height="678" key="search.everywhere.popup" timestamp="1632412197601">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1326" y="376" width="672" height="678" key="search.everywhere.popup/0.0.3440.1400@0.0.3440.1400" timestamp="1632412197601" />
+  </component>
+</project>
