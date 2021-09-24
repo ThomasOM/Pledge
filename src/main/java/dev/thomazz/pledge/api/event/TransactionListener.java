@@ -7,6 +7,7 @@ public interface TransactionListener {
 
     /**
      * Called when the server sends the first transaction of an {@link ActionPair}.
+     * Note: Called from the server main thread, please take care.
      */
     default void onSendStart(TransactionEvent event) {
         // Optional implementation
@@ -14,6 +15,7 @@ public interface TransactionListener {
 
     /**
      * Called when the server has sent both transaction of an {@link ActionPair}.
+     * Note: Called from the server main thread, please take care.
      */
     default void onSendEnd(TransactionEvent event) {
         // Optional implementation
@@ -21,6 +23,7 @@ public interface TransactionListener {
 
     /**
      * Called when the server received the first transaction of an {@link ActionPair}.
+     * Note: Called from a netty thread, anything intensive should not be done on this thread.
      */
     default void onReceiveStart(TransactionEvent event) {
         // Optional implementation
@@ -28,6 +31,7 @@ public interface TransactionListener {
 
     /**
      * Called when the server received both transactions of an {@link ActionPair}.
+     * Note: Called from a netty thread, anything intensive should not be done on this thread.
      */
     default void onReceiveEnd(TransactionEvent event) {
         // Optional implementation

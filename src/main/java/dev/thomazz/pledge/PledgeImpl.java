@@ -36,14 +36,21 @@ public final class PledgeImpl implements Pledge {
     @Override
     public PledgeImpl range(short min, short max) {
         this.validateRunState("set range");
+
+        // Quickly verify if range is valid
+        if (min >= max) {
+            throw new IllegalArgumentException("Min range boundary can not be higher than or equal to max!");
+        }
+
         this.transactionManager.setRange(min, max);
         return this;
     }
 
     @Override
-    public void events(boolean value) {
+    public PledgeImpl events(boolean value) {
         this.validateRunState("set events");
         this.events = value;
+        return this;
     }
 
     @Override
@@ -86,7 +93,7 @@ public final class PledgeImpl implements Pledge {
     }
 
     private void validateRunState(String action) throws IllegalStateException {
-        if (!this.running) {
+        if (this.running) {
             throw new IllegalStateException("Can not " + action + " while already running!");
         }
     }

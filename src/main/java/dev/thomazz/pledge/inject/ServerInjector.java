@@ -51,7 +51,7 @@ public class ServerInjector implements Injector {
 
     @Override
     public void eject() throws Exception {
-        // Replace hooked wrapper back to original
+        // Replace hooked wrapper with original
         if (this.hookedField != null) {
             Class<?> serverClazz = MinecraftUtil.nms("MinecraftServer");
             Object server = ReflectionUtil.invokeStatic(serverClazz, "getServer");

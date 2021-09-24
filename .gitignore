@@ -31,3 +31,8 @@ manifest.mf
 *.ipr
 *.iws
 .idea/
+
+# exclude test plugin
+/src/main/java/test/
+/src/main/resources/plugin.yml
+

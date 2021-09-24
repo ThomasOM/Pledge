@@ -63,7 +63,7 @@ public class TransactionHandler implements HandlerInfo {
     }
 
     public void tickEnd() {
-        if (this.isOpen()) {
+        if (this.isOpen() && this.sendingPair != null) {
             this.sendingPair.setId2(this.index);
 
             // Write a transaction packet to the channel and call send end
@@ -118,18 +118,18 @@ public class TransactionHandler implements HandlerInfo {
     private short updateIndex(short index) {
         // Depending on the direction, we count until we reach the boundary and flip to the opposite boundary
         switch (this.direction) {
-            case POSITIVE:
-                index--;
-
+            case NEGATIVE:
                 if (index <= this.min) {
                     index = this.max;
+                } else {
+                    index--;
                 }
                 break;
-            case NEGATIVE:
-                index++;
-
+            case POSITIVE:
                 if (index >= this.max) {
                     index = this.min;
+                } else {
+                    index++;
                 }
                 break;
         }

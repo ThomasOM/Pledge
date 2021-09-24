@@ -12,6 +12,7 @@ public interface Pledge {
     /**
      * Sets the range the action number of transaction packets should vary between.
      * A 'max' value equal to or above 0 should not be used since it can interfere with inventory actions.
+     * A range larger than at least 200 is recommended.
      * Can not be set while running.
      *
      * By default, 'min' is equal to {@link Short#MIN_VALUE} and 'max' is equal to -1
@@ -34,12 +35,13 @@ public interface Pledge {
     /**
      * Whether events should be turned on or not.
      * If you want to use a {@link TransactionListener}, make sure to enable this.
+     * Can not be set while running.
      *
      * By default, this is set to false.
      *
      * @param value - If events should be enabled or not
      */
-    void events(boolean value);
+    Pledge events(boolean value);
 
     /**
      * Starts the task to send transactions through each player channel on the start and end of the tick.

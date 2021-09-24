@@ -4,7 +4,7 @@ import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.Direction;
 import dev.thomazz.pledge.api.event.TransactionEvent;
 import dev.thomazz.pledge.api.event.TransactionListener;
-import dev.thomazz.pledge.inject.net.PostPacketHandler;
+import dev.thomazz.pledge.inject.net.PledgePacketHandler;
 import dev.thomazz.pledge.util.MinecraftUtil;
 import io.netty.channel.Channel;
 import java.util.ArrayList;
@@ -19,8 +19,8 @@ public class TransactionManager {
     private final List<TransactionListener> listeners = new CopyOnWriteArrayList<>();
 
     private Direction direction;
-    private short min;
-    private short max;
+    private short min = Short.MIN_VALUE;
+    private short max = -1;
 
     // Track state to prevent unordered calls
     private boolean finishedTick = true;
@@ -64,7 +64,7 @@ public class TransactionManager {
             TransactionHandler handler = new TransactionHandler(player, channel, this.direction, this.min, this.max);
 
             // Use our own handler to listen to incoming transactions
-            channel.pipeline().addAfter("packet_handler", "post_packet_handler", new PostPacketHandler(handler));
+            channel.pipeline().addBefore("packet_handler", "pledge_packet_handler", new PledgePacketHandler(handler));
 
             this.transactionHandlers.add(handler);
         } catch (Exception e) {
