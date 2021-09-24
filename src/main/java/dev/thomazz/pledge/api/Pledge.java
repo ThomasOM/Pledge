@@ -11,9 +11,10 @@ public interface Pledge {
 
     /**
      * Sets the range the action number of transaction packets should vary between.
-     * By default, 'min' is equal to {@link Short#MIN_VALUE} and 'max' is equal to -1
      * A 'max' value equal to or above 0 should not be used since it can interfere with inventory actions.
      * Can not be set while running.
+     *
+     * By default, 'min' is equal to {@link Short#MIN_VALUE} and 'max' is equal to -1
      *
      * @param min - Minimum value of the action number
      * @param max - Maximum value of the action number
@@ -22,12 +23,23 @@ public interface Pledge {
 
     /**
      * Direction in which the action number of transaction packets are counted.
-     * By default, {@link Direction#NEGATIVE} is used.
      * Can not be set while running.
+     *
+     * By default, {@link Direction#NEGATIVE} is used.
      *
      * @param direction - Direction of action number counting
      */
     Pledge direction(Direction direction);
+
+    /**
+     * Whether events should be turned on or not.
+     * If you want to use a {@link TransactionListener}, make sure to enable this.
+     *
+     * By default, this is set to false.
+     *
+     * @param value - If events should be enabled or not
+     */
+    void events(boolean value);
 
     /**
      * Starts the task to send transactions through each player channel on the start and end of the tick.
@@ -56,14 +68,6 @@ public interface Pledge {
      * @param listener - The listener
      */
     void removeListener(TransactionListener listener);
-
-    /**
-     * Whether events should be turned on or not.
-     * If you want to use a {@link TransactionListener}, make sure to enable this.
-     *
-     * @param value - If events should be enabled or not
-     */
-    void events(boolean value);
 
     /**
      * Builds the underlying base object and injects into the server.
