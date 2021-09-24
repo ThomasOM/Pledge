@@ -12,7 +12,7 @@ public class PledgePacketHandler extends ChannelInboundHandlerAdapter {
     private final Reference<TransactionHandler> transactionHandler;
 
     public PledgePacketHandler(TransactionHandler transactionHandler) {
-        // Don't want in memory channels to prevent the handler from getting collected
+        // Don't want in memory channel handlers to prevent the handler from getting collected
         this.transactionHandler = new WeakReference<>(transactionHandler);
     }
 

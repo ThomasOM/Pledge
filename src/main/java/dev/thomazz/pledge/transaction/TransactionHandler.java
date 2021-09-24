@@ -31,7 +31,7 @@ public class TransactionHandler implements HandlerInfo {
         this.playerReference = new WeakReference<>(player);
         this.channelReference = new WeakReference<>(channel);
 
-        this.direction = Direction.NEGATIVE;
+        this.direction = direction;
         this.min = min;
         this.max = max;
 
