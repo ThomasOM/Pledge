@@ -8,17 +8,17 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 
-public class PostPacketChannelHandler extends SimpleChannelInboundHandler<Object> {
+public class PostPacketHandler extends SimpleChannelInboundHandler<Object> {
     private final Reference<TransactionHandler> transactionHandler;
 
-    public PostPacketChannelHandler(TransactionHandler transactionHandler) {
+    public PostPacketHandler(TransactionHandler transactionHandler) {
         // Don't want in memory channels to prevent the handler from getting collected
         this.transactionHandler = new WeakReference<>(transactionHandler);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object object) {
-        if (PacketUtil.TRANSACTION_CLASS.equals(object.getClass())) {
+        if (PacketUtil.IN_TRANSACTION_CLASS.equals(object.getClass())) {
             try {
                 // Handle transaction if the window ID is correct
                 TransactionHandler handler = this.transactionHandler.get();

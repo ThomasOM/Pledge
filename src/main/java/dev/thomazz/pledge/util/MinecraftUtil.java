@@ -1,57 +1,56 @@
 package dev.thomazz.pledge.util;
 
+import io.netty.channel.Channel;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 public final class MinecraftUtil {
-    private static String BASE = Bukkit.getServer().getClass().getPackage().getName();
+    private static final String BASE = Bukkit.getServer().getClass().getPackage().getName();
     private static final String NMS = MinecraftUtil.BASE.replace("org.bukkit.craftbukkit", "net.minecraft.server");
+
+    // Some caching to speed up reflection
+    private static Field CONNECTION_FIELD;
+    private static Field NETWORK_MANAGER_FIELD;
+    private static Field CHANNEL_FIELD;
 
     public static Class<?> nms(String className) throws ClassNotFoundException {
         return Class.forName(MinecraftUtil.NMS + "." + className);
     }
 
-    // Don't really care if this is slow, because the object gets cached after retrieving it
-    public static Player getPlayerFromManager(Object networkManager) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException {
-        for (Field field : networkManager.getClass().getDeclaredFields()) {
-            if (field.getType().getSimpleName().equalsIgnoreCase("PacketListener")) {
-                field.setAccessible(true);
-                Object listener = field.get(networkManager);
-                if (listener.getClass().getSimpleName().equalsIgnoreCase("PlayerConnection")) {
-                    for (Field inner : listener.getClass().getDeclaredFields()) {
-                        if (inner.getType().getSimpleName().equalsIgnoreCase("EntityPlayer") || inner.getType().getSimpleName().equalsIgnoreCase("Player")) {
-                            Object entityPlayer = inner.get(listener);
-                            Method getBukkitEntity = entityPlayer.getClass().getDeclaredMethod("getBukkitEntity");
-                            return (Player) getBukkitEntity.invoke(entityPlayer);
-                        }
-                    }
-                    break;
-                }
+    public static Channel getChannelFromPlayer(Player player) throws Exception {
+        Method getHandle = player.getClass().getDeclaredMethod("getHandle");
+        Object handle = getHandle.invoke(player);
+
+        // Player Connection
+        if (MinecraftUtil.CONNECTION_FIELD == null) {
+            MinecraftUtil.CONNECTION_FIELD = ReflectionUtil.getFieldByClassNames(handle.getClass(), "PlayerConnection");
+            if (MinecraftUtil.CONNECTION_FIELD == null) {
+                throw new NoSuchFieldException("No connection field found in player handle!");
             }
         }
 
-        return null;
-    }
+        Object connection = MinecraftUtil.CONNECTION_FIELD.get(handle);
 
-    // Only used on startup
-    public static Object getServerConnection() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException {
-        Class<?> serverClazz = MinecraftUtil.nms("MinecraftServer");
-        Object server = ReflectionUtil.invokeStatic(serverClazz, "getServer");
-        Object connection = null;
-
-        for (Method m : serverClazz.getDeclaredMethods()) {
-            if (m.getReturnType() != null) {
-                if (m.getReturnType().getSimpleName().equals("ServerConnection")) {
-                    if (m.getParameterTypes().length == 0) {
-                        connection = m.invoke(server);
-                    }
-                }
+        // Network Manager
+        if (MinecraftUtil.NETWORK_MANAGER_FIELD == null) {
+            MinecraftUtil.NETWORK_MANAGER_FIELD = ReflectionUtil.getFieldByClassNames(connection.getClass(), "NetworkManager");
+            if (MinecraftUtil.NETWORK_MANAGER_FIELD == null) {
+                throw new NoSuchFieldException("No network manager field found in player connection!");
             }
         }
 
-        return connection;
+        Object networkManager = MinecraftUtil.NETWORK_MANAGER_FIELD.get(connection);
+
+        // Channel
+        if (MinecraftUtil.CHANNEL_FIELD == null) {
+            MinecraftUtil.CHANNEL_FIELD = ReflectionUtil.getFieldByType(networkManager.getClass(), Channel.class);
+            if (MinecraftUtil.CHANNEL_FIELD == null) {
+                throw new NoSuchFieldException("No channel field found in network manager!");
+            }
+        }
+
+        return (Channel) MinecraftUtil.CHANNEL_FIELD.get(networkManager);
     }
 }

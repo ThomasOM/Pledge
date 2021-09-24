@@ -12,19 +12,7 @@ public final class ReflectionUtil {
         return (T) m.invoke(null);
     }
 
-    public static <T> T get(Object o, String f) throws NoSuchFieldException, IllegalAccessException {
-        Field field = o.getClass().getDeclaredField(f);
-        field.setAccessible(true);
-        return (T) field.get(o);
-    }
-
-    public static void set(Object o, String f, Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = o.getClass().getDeclaredField(f);
-        field.setAccessible(true);
-        field.set(o, value);
-    }
-
-    public static <T> Field get(Class<?> oClass, Class<?> type, int index) {
+    public static Field get(Class<?> oClass, Class<?> type, int index) {
         int i = 0;
         for (Field field : oClass.getDeclaredFields()) {
             if (field.getType() == type) {
@@ -33,6 +21,30 @@ public final class ReflectionUtil {
                     return field;
                 }
                 i++;
+            }
+        }
+
+        return null;
+    }
+
+    public static Field getFieldByClassNames(Class<?> clazz, String... simpleNames) {
+        for (Field field : clazz.getDeclaredFields()) {
+            String typeSimpleName = field.getType().getSimpleName();
+            for (String name : simpleNames) {
+                if (name.equals(typeSimpleName)) {
+                    return field;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static Field getFieldByType(Class<?> clazz, Class<?> type) {
+        for (Field field : clazz.getDeclaredFields()) {
+            Class<?> foundType = field.getType();
+            if (type.isAssignableFrom(foundType)) {
+                return field;
             }
         }
 

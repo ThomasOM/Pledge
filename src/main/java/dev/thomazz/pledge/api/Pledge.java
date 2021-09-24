@@ -58,19 +58,24 @@ public interface Pledge {
     void removeListener(TransactionListener listener);
 
     /**
-     * Builds the underlying base object and injects into the server.
+     * Whether events should be turned on or not.
+     * If you want to use a {@link TransactionListener}, make sure to enable this.
      *
-     * @param events - Determines if events should be injected for the channel initializer.
-     * If you already listen to transactions yourself and don't plan to use {@link TransactionListener}, you can disable this.
+     * @param value - If events should be enabled or not
+     */
+    void events(boolean value);
+
+    /**
+     * Builds the underlying base object and injects into the server.
      *
      * @return - {@link Pledge} object that has been built
      */
-    static Pledge build(boolean events) {
+    static Pledge build() {
         if (PledgeImpl.INSTANCE != null) {
-            throw new IllegalStateException("Can not create multiple instances of " + Pledge.class.getName() + "!");
+            throw new IllegalStateException("Can not create multiple instances of " + Pledge.class.getSimpleName() + "!");
         }
 
-        PledgeImpl.INSTANCE = new PledgeImpl(events);
+        PledgeImpl.INSTANCE = new PledgeImpl();
         return PledgeImpl.INSTANCE;
     }
 }

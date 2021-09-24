@@ -4,10 +4,8 @@ import dev.thomazz.pledge.api.Direction;
 import dev.thomazz.pledge.api.HandlerInfo;
 import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.event.TransactionEvent;
-import dev.thomazz.pledge.util.MinecraftUtil;
 import dev.thomazz.pledge.util.PacketUtil;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -15,6 +13,7 @@ import java.util.Map;
 import org.bukkit.entity.Player;
 
 public class TransactionHandler implements HandlerInfo {
+    private final Reference<Player> playerReference;
     private final Reference<Channel> channelReference;
     private final Direction direction;
     private final short min;
@@ -27,11 +26,9 @@ public class TransactionHandler implements HandlerInfo {
     private TransactionPair receivingPair;
     private TransactionPair sendingPair;
 
-    // Could be null when player hasn't been created yet
-    private volatile Reference<Player> playerReference;
-
-    TransactionHandler(Channel channel, Direction direction, short min, short max) {
-        // We need to be careful with netty and don't want channels to persist because of this reference
+    TransactionHandler(Player player, Channel channel, Direction direction, short min, short max) throws Exception {
+        // We don't want player objects and channels to persist because of this reference
+        this.playerReference = new WeakReference<>(player);
         this.channelReference = new WeakReference<>(channel);
 
         this.direction = Direction.NEGATIVE;
@@ -49,34 +46,7 @@ public class TransactionHandler implements HandlerInfo {
 
     @Override
     public Player getPlayer() {
-        if (this.playerReference != null) {
-            return this.playerReference.get();
-        }
-
-        // Look up player through the network manager
-        Player lookup = null;
-
-        Channel channel = this.getChannel();
-        if (channel != null) {
-            ChannelPipeline pipeline = channel.pipeline();
-            Object networkManager = pipeline.get("packet_handler");
-
-            if (networkManager != null) {
-                try {
-                    lookup = MinecraftUtil.getPlayerFromManager(networkManager);
-
-                    // Create a weak reference because we don't want to interrupt server memory management
-                    if (lookup != null) {
-                        this.playerReference = new WeakReference<>(lookup);
-                    }
-                } catch (Exception e) {
-                    PledgeImpl.LOGGER.severe("Something went wrong retrieving the player from a channel!");
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return lookup;
+        return this.playerReference.get();
     }
 
     public void tickStart() {

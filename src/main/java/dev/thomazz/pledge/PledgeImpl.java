@@ -3,10 +3,12 @@ package dev.thomazz.pledge;
 import dev.thomazz.pledge.api.Direction;
 import dev.thomazz.pledge.api.Pledge;
 import dev.thomazz.pledge.api.event.TransactionListener;
-import dev.thomazz.pledge.inject.BukkitInjector;
+import dev.thomazz.pledge.inject.InjectListener;
+import dev.thomazz.pledge.inject.ServerInjector;
 import dev.thomazz.pledge.inject.Injector;
 import dev.thomazz.pledge.transaction.TransactionManager;
 import java.util.logging.Logger;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PledgeImpl implements Pledge {
@@ -15,21 +17,13 @@ public final class PledgeImpl implements Pledge {
 
     private final Injector injector;
     private final TransactionManager transactionManager;
-    private final boolean events;
+
+    private boolean events;
     private boolean running;
 
-    public PledgeImpl(boolean events) {
-        this.injector = new BukkitInjector(events);
+    public PledgeImpl() {
+        this.injector = new ServerInjector();
         this.transactionManager = new TransactionManager();
-        this.events = events;
-
-        // Inject when object is created
-        try {
-            this.injector.inject();
-        } catch (Exception e) {
-            PledgeImpl.LOGGER.severe("Exception encountered when trying to inject!");
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -47,8 +41,26 @@ public final class PledgeImpl implements Pledge {
     }
 
     @Override
+    public void events(boolean value) {
+        this.validateRunState("set events");
+        this.events = value;
+    }
+
+    @Override
     public void start(JavaPlugin plugin) {
         this.validateRunState("start");
+
+        // Register injection listener
+        Bukkit.getPluginManager().registerEvents(new InjectListener(), plugin);
+
+        // Inject into server
+        try {
+            this.injector.inject();
+        } catch (Exception e) {
+            PledgeImpl.LOGGER.severe("Exception encountered when trying to inject!");
+            e.printStackTrace();
+        }
+
         this.running = true;
         this.transactionManager.start(plugin);
     }

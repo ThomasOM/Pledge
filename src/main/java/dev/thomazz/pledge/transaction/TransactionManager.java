@@ -1,13 +1,17 @@
 package dev.thomazz.pledge.transaction;
 
+import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.Direction;
 import dev.thomazz.pledge.api.event.TransactionEvent;
 import dev.thomazz.pledge.api.event.TransactionListener;
+import dev.thomazz.pledge.inject.net.PostPacketHandler;
+import dev.thomazz.pledge.util.MinecraftUtil;
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class TransactionManager {
@@ -54,10 +58,19 @@ public class TransactionManager {
         this.max = max;
     }
 
-    public TransactionHandler createTransactionHandler(Channel channel) {
-        TransactionHandler handler = new TransactionHandler(channel, this.direction, this.min, this.max);
-        this.transactionHandlers.add(handler);
-        return handler;
+    public void createTransactionHandler(Player player) {
+        try {
+            Channel channel = MinecraftUtil.getChannelFromPlayer(player);
+            TransactionHandler handler = new TransactionHandler(player, channel, this.direction, this.min, this.max);
+
+            // Use our own handler to listen to incoming transactions
+            channel.pipeline().addAfter("packet_handler", "post_packet_handler", new PostPacketHandler(handler));
+
+            this.transactionHandlers.add(handler);
+        } catch (Exception e) {
+            PledgeImpl.LOGGER.severe("Could not create a transaction handler for " + player.getName() + "!");
+            e.printStackTrace();
+        }
     }
 
     public void addListener(TransactionListener listener) {
