@@ -8,6 +8,7 @@
     <artifactId>pledge</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Pledge</name>
+    <packaging>jar</packaging>
 
     <dependencies>
         <!-- Spigot -->
