@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 
 @SuppressWarnings("unchecked")
 public final class ReflectionUtil {
@@ -12,7 +13,7 @@ public final class ReflectionUtil {
         return (T) m.invoke(null);
     }
 
-    public static Field get(Class<?> oClass, Class<?> type, int index) {
+    public static Field get(Class<?> oClass, Class<?> type, int index) throws NoSuchFieldException {
         int i = 0;
         for (Field field : oClass.getDeclaredFields()) {
             if (field.getType() == type) {
@@ -24,10 +25,10 @@ public final class ReflectionUtil {
             }
         }
 
-        return null;
+        throw new NoSuchFieldException("Could not find field of class " + type.getName() + " with index " + index);
     }
 
-    public static Field getFieldByClassNames(Class<?> clazz, String... simpleNames) {
+    public static Field getFieldByClassNames(Class<?> clazz, String... simpleNames)  throws NoSuchFieldException {
         for (Field field : clazz.getDeclaredFields()) {
             String typeSimpleName = field.getType().getSimpleName();
             for (String name : simpleNames) {
@@ -37,10 +38,10 @@ public final class ReflectionUtil {
             }
         }
 
-        return null;
+        throw new NoSuchFieldException("Could not find field in class " + clazz.getName() + " with names " + Arrays.toString(simpleNames));
     }
 
-    public static Field getFieldByType(Class<?> clazz, Class<?> type) {
+    public static Field getFieldByType(Class<?> clazz, Class<?> type) throws NoSuchFieldException {
         for (Field field : clazz.getDeclaredFields()) {
             Class<?> foundType = field.getType();
             if (type.isAssignableFrom(foundType)) {
@@ -48,7 +49,7 @@ public final class ReflectionUtil {
             }
         }
 
-        return null;
+        throw new NoSuchFieldException("Could not find field in class " + clazz.getName() + " with type " + type.getName());
     }
 
     public static void removeFinalModifier(Field field) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {

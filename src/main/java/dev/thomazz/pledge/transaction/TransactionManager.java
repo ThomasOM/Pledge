@@ -18,7 +18,7 @@ public class TransactionManager {
     private final List<TransactionHandler> transactionHandlers = new ArrayList<>();
     private final List<TransactionListener> listeners = new CopyOnWriteArrayList<>();
 
-    private Direction direction;
+    private Direction direction = Direction.NEGATIVE;
     private short min = Short.MIN_VALUE;
     private short max = -1;
 

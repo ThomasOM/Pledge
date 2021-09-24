@@ -16,18 +16,19 @@ public class PledgePacketHandler extends ChannelInboundHandlerAdapter {
         this.transactionHandler = new WeakReference<>(transactionHandler);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object object) throws Exception {
         if (PacketUtil.IN_TRANSACTION_CLASS.equals(object.getClass())) {
             try {
                 // Handle transaction if the window ID is correct
                 TransactionHandler handler = this.transactionHandler.get();
-                if (handler != null && (int) PacketUtil.IN_WINDOW_FIELD.get(object) == 0) {
-                    handler.handleIncomingTransaction((short) PacketUtil.IN_ACTION_FIELD.get(object));
+                if (handler != null && (int) PacketUtil.IN_WINDOW_FIELD_GET.invoke(object) == 0) {
+                    handler.handleIncomingTransaction((short) PacketUtil.IN_ACTION_FIELD_GET.invoke(object));
                 }
-            } catch (Exception e) {
+            } catch (Throwable throwable) {
                 PledgeImpl.LOGGER.severe("Could not read transaction packet!");
-                e.printStackTrace();
+                throwable.printStackTrace();
             }
         }
 
