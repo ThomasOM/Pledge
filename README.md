@@ -21,7 +21,7 @@ Build a Pledge object using the ```Pledge#build``` method and use the builder pa
 After you're done, use the ```Pledge#start``` method to inject and start the transaction task.
 Most of your questions should be answered by reading the documentation in the API package.
 
-```
+```java
 public void onEnable() {
     Pledge pledge = Pledge.build();
     pledge.start(this);
@@ -34,12 +34,13 @@ Simply implement the ```TransactionListener``` interface and create your own imp
 After that, you can register it using the ```Pledge#addListener``` method.
 Below is an example of using Pledge with a transaction listener, where ```MyTransactionListener``` is your implementation.
 
-```
+```java
 public void onEnable() {
     Pledge pledge = Pledge.build().events(true);
     pledge.start(this);
     
     pledge.addListener(new MyTransactionListener());
+}
 ```
 
 Another important detail is that the player channel is injected when joining the world, so only play packets are tracked.
