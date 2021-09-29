@@ -12,7 +12,7 @@ public interface Pledge {
     /**
      * Sets the range the action number of transaction packets should vary between.
      * A 'max' value equal to or above 0 should not be used since it can interfere with inventory actions.
-     * A range larger than at least 200 is recommended.
+     * A range larger than at least 800 is recommended, assuming you time players out after 20 seconds.
      * Can not be set while running.
      *
      * By default, 'min' is equal to {@link Short#MIN_VALUE} and 'max' is equal to -1
@@ -20,7 +20,7 @@ public interface Pledge {
      * @param min - Minimum value of the action number
      * @param max - Maximum value of the action number
      */
-    Pledge range(short min, short max);
+    Pledge range(int min, int max);
 
     /**
      * Direction in which the action number of transaction packets are counted.

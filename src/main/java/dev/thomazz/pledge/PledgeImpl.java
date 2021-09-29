@@ -37,7 +37,7 @@ public final class PledgeImpl implements Pledge {
     }
 
     @Override
-    public PledgeImpl range(short min, short max) {
+    public PledgeImpl range(int min, int max) {
         this.validateRunState("set range");
 
         // Quickly verify if range is valid

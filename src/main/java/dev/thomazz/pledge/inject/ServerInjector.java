@@ -18,11 +18,11 @@ public class ServerInjector implements Injector {
     @Override
     public void inject() throws Exception {
         // Start end of tick injection
-        Class<?> serverClazz = MinecraftUtil.nms("MinecraftServer");
-        Object server = ReflectionUtil.invokeStatic(serverClazz, "getServer");
+        Object server = MinecraftUtil.getMinecraftServer();
+        Class<?> serverClass = ReflectionUtil.getSuperClassByName(server.getClass(), "MinecraftServer");
 
         // Inject our hooked list for end of tick
-        for (Field field : serverClazz.getDeclaredFields()) {
+        for (Field field : serverClass.getDeclaredFields()) {
             if (field.getType().equals(List.class)) {
                 // Check if type parameters match one of the tickable class names used throughout different versions
                 Class<?> genericType = (Class<?>) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
@@ -40,9 +40,7 @@ public class ServerInjector implements Injector {
                     }
                 };
 
-                // Remove the final modifier if it's present and set the field
-                ReflectionUtil.removeFinalModifier(field);
-                field.set(server, wrapper);
+                ReflectionUtil.setUnsafe(server, field, wrapper);
                 this.hookedField = field;
                 break;
             }
@@ -53,12 +51,11 @@ public class ServerInjector implements Injector {
     public void eject() throws Exception {
         // Replace hooked wrapper with original
         if (this.hookedField != null) {
-            Class<?> serverClazz = MinecraftUtil.nms("MinecraftServer");
-            Object server = ReflectionUtil.invokeStatic(serverClazz, "getServer");
+            Object server = MinecraftUtil.getMinecraftServer();
 
             HookedListWrapper<?> hookedListWrapper = (HookedListWrapper<?>) this.hookedField.get(server);
 
-            this.hookedField.set(server, hookedListWrapper.getBase());
+            ReflectionUtil.setUnsafe(server, this.hookedField, hookedListWrapper.getBase());
             this.hookedField = null;
         }
     }

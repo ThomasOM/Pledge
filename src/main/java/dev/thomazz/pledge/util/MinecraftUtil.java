@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import org.bukkit.Bukkit;
+import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
 public final class MinecraftUtil {
@@ -11,12 +12,28 @@ public final class MinecraftUtil {
     private static final String NMS = MinecraftUtil.BASE.replace("org.bukkit.craftbukkit", "net.minecraft.server");
 
     // Some caching to speed up reflection
+    private static Method SERVER_GET_METHOD;
     private static Field CONNECTION_FIELD;
     private static Field NETWORK_MANAGER_FIELD;
     private static Field CHANNEL_FIELD;
 
-    public static Class<?> nms(String className) throws ClassNotFoundException {
+    public static Class<?> legacyNms(String className) throws ClassNotFoundException {
         return Class.forName(MinecraftUtil.NMS + "." + className);
+    }
+
+    public static Class<?> gamePacket(String className) throws ClassNotFoundException {
+        return Class.forName("net.minecraft.network.protocol.game." + className);
+    }
+
+    public static Object getMinecraftServer() throws Exception {
+        Server server = Bukkit.getServer();
+
+        // Internal server
+        if (MinecraftUtil.SERVER_GET_METHOD == null) {
+            MinecraftUtil.SERVER_GET_METHOD = server.getClass().getDeclaredMethod("getServer");
+        }
+
+        return MinecraftUtil.SERVER_GET_METHOD.invoke(server);
     }
 
     public static Channel getChannelFromPlayer(Player player) throws Exception {

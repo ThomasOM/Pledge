@@ -16,17 +16,17 @@ public class TransactionHandler implements HandlerInfo {
     private final Reference<Player> playerReference;
     private final Reference<Channel> channelReference;
     private final Direction direction;
-    private final short min;
-    private final short max;
+    private final int min;
+    private final int max;
 
-    private short index;
-    private short expectedIndex;
+    private int index;
+    private int expectedIndex;
 
-    private Map<Short, TransactionPair> receivingPairMapping = new HashMap<>();
+    private Map<Integer, TransactionPair> receivingPairMapping = new HashMap<>();
     private TransactionPair receivingPair;
     private TransactionPair sendingPair;
 
-    TransactionHandler(Player player, Channel channel, Direction direction, short min, short max) throws Exception {
+    TransactionHandler(Player player, Channel channel, Direction direction, int min, int max) {
         // We don't want player objects and channels to persist because of this reference
         this.playerReference = new WeakReference<>(player);
         this.channelReference = new WeakReference<>(channel);
@@ -74,7 +74,7 @@ public class TransactionHandler implements HandlerInfo {
         }
     }
 
-    public void handleIncomingTransaction(short id) {
+    public void handleIncomingTransaction(int id) {
         // First check if the ID is within bounds
         if (id >= this.min && id <= this.max) {
             if (this.receivingPair != null) {
@@ -115,7 +115,7 @@ public class TransactionHandler implements HandlerInfo {
         }
     }
 
-    private short updateIndex(short index) {
+    private int updateIndex(int index) {
         // Depending on the direction, we count until we reach the boundary and flip to the opposite boundary
         switch (this.direction) {
             case NEGATIVE:

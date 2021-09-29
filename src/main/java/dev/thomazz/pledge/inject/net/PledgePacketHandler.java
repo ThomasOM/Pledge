@@ -19,17 +19,28 @@ public class PledgePacketHandler extends ChannelInboundHandlerAdapter {
     @SuppressWarnings("ConstantConditions")
     @Override
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object object) throws Exception {
-        if (PacketUtil.IN_TRANSACTION_CLASS.equals(object.getClass())) {
-            try {
-                // Handle transaction if the window ID is correct
-                TransactionHandler handler = this.transactionHandler.get();
-                if (handler != null && (int) PacketUtil.IN_WINDOW_FIELD_GET.invoke(object) == 0) {
-                    handler.handleIncomingTransaction((short) PacketUtil.IN_ACTION_FIELD_GET.invoke(object));
-                }
-            } catch (Throwable throwable) {
-                PledgeImpl.LOGGER.severe("Could not read transaction packet!");
-                throwable.printStackTrace();
+        try {
+            switch (PacketUtil.MODE) {
+                case TRANSACTION:
+                    if (PacketUtil.IN_TRANSACTION_CLASS.equals(object.getClass())) {
+                        TransactionHandler handler = this.transactionHandler.get();
+                        if (handler != null && (int) PacketUtil.IN_WINDOW_FIELD_GET.invoke(object) == 0) {
+                            handler.handleIncomingTransaction((short) PacketUtil.IN_ACTION_FIELD_GET.invoke(object));
+                        }
+                    }
+
+                    break;
+                case PING_PONG:
+                    if (PacketUtil.PONG_CLASS.equals(object.getClass())) {
+                        TransactionHandler handler = this.transactionHandler.get();
+                        handler.handleIncomingTransaction((int) PacketUtil.PONG_ID_FIELD_GET.invoke(object));
+                    }
+
+                    break;
             }
+        } catch (Throwable throwable) {
+            PledgeImpl.LOGGER.severe("Could not read packet!");
+            throwable.printStackTrace();
         }
 
         super.channelRead(channelHandlerContext, object);

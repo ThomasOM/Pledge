@@ -8,10 +8,10 @@ public interface ActionPair {
     /**
      * @return The action number of the first transaction of this pair.
      */
-    short getId1();
+    int getId1();
 
     /**
      * @return The action number of the second transaction of this pair.
      */
-    short getId2();
+    int getId2();
 }
