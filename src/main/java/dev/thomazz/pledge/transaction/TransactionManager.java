@@ -6,7 +6,6 @@ import dev.thomazz.pledge.api.event.TransactionEvent;
 import dev.thomazz.pledge.api.event.TransactionListener;
 import dev.thomazz.pledge.inject.net.PledgePacketHandler;
 import dev.thomazz.pledge.util.MinecraftUtil;
-import dev.thomazz.pledge.util.PacketUtil;
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,25 +18,9 @@ public class TransactionManager {
     private final List<TransactionHandler> transactionHandlers = new ArrayList<>();
     private final List<TransactionListener> listeners = new CopyOnWriteArrayList<>();
 
-    private Direction direction;
-    private int min;
-    private int max;
-
-    public TransactionManager() {
-        this.direction = Direction.NEGATIVE;
-        this.max = -1;
-
-        // Different default ranges depending on mode
-        switch (PacketUtil.MODE) {
-            case TRANSACTION:
-                this.min = Short.MIN_VALUE;
-                break;
-            case PING_PONG:
-                this.min = Integer.MIN_VALUE;
-                break;
-        }
-    }
-
+    private Direction direction = Direction.NEGATIVE;
+    private int min = Short.MIN_VALUE;
+    private int max = -1;
 
     // Track state to prevent unordered calls
     private boolean finishedTick = true;
