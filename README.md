@@ -1,5 +1,5 @@
 # Pledge
-Bukkit packet tracking API for predicting when a server packet arrives at a client using transactions.
+A high performance and lightweight Bukkit packet tracking API for predicting when a server packet arrives at a client using transactions.
 Mainly intended for use in Minecraft anticheats, or if you really want to track whether a player has received packets or not.
 Supporting 1.8 - 1.17.1
 
