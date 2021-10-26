@@ -71,6 +71,9 @@ public final class PledgeImpl implements Pledge {
             e.printStackTrace();
         }
 
+        // Inject into currently online players (for reloads)
+        Bukkit.getOnlinePlayers().forEach(player -> PledgeImpl.INSTANCE.getTransactionManager().createTransactionHandler(player));
+
         this.running = true;
         this.transactionManager.start(plugin);
     }
@@ -79,6 +82,8 @@ public final class PledgeImpl implements Pledge {
     public void destroy() {
         try {
             this.injector.eject();
+            // Remove handlers (for reloads)
+            Bukkit.getOnlinePlayers().forEach(this.transactionManager::removeTransactionHandler);
         } catch (Exception e) {
             PledgeImpl.LOGGER.severe("Exception encountered when trying to eject!");
             e.printStackTrace();

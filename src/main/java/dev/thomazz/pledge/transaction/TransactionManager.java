@@ -10,6 +10,8 @@ import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import io.netty.channel.ChannelHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -69,6 +71,19 @@ public class TransactionManager {
             this.transactionHandlers.add(handler);
         } catch (Exception e) {
             PledgeImpl.LOGGER.severe("Could not create a transaction handler for " + player.getName() + "!");
+            e.printStackTrace();
+        }
+    }
+
+    public void removeTransactionHandler(Player player) {
+        try {
+            Channel channel = MinecraftUtil.getChannelFromPlayer(player);
+
+            // Remove handler from players
+            channel.pipeline().remove("pledge_packet_handler");
+            this.transactionHandlers.removeIf(transactionHandler -> transactionHandler.getPlayer().equals(player));
+        } catch (Exception e) {
+            PledgeImpl.LOGGER.severe("Could not remove a transaction handler for " + player.getName() + "!");
             e.printStackTrace();
         }
     }
