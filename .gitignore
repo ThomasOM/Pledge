@@ -36,3 +36,5 @@ manifest.mf
 /src/main/java/test/
 /src/main/resources/plugin.yml
 
+# build script
+deployscript.sh
