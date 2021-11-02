@@ -2,6 +2,7 @@ package dev.thomazz.pledge.util;
 
 import dev.thomazz.pledge.PledgeImpl;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import sun.misc.Unsafe;
 
@@ -60,6 +61,17 @@ public final class ReflectionUtil {
         }
 
         throw new NoSuchFieldException("Could not find field in class " + clazz.getName() + " with type " + type.getName());
+    }
+
+    public static Method getMethodByName(Class<?> clazz, String name) throws NoSuchMethodException {
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (name.equals(method.getName())) {
+                method.setAccessible(true);
+                return method;
+            }
+        }
+
+        throw new NoSuchMethodException("Could not find method in class " + clazz.getName() + " with name " + name);
     }
 
     public static Class<?> getSuperClassByName(Class<?> clazz, String simpleName) {

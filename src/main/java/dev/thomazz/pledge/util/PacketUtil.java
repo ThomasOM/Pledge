@@ -4,6 +4,7 @@ import dev.thomazz.pledge.PledgeImpl;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 @SuppressWarnings({"ConstantConditions", "SameParameterValue"})
 public final class PacketUtil {
@@ -34,10 +35,8 @@ public final class PacketUtil {
     public static final MethodHandle PONG_ID_FIELD_GET = PacketUtil.exceptionWrapCached(() -> PacketUtil.getterFromData(PacketUtil.PONG_CLASS, int.class, 0));
     public static final MethodHandle PING_ID_FIELD_SET = PacketUtil.exceptionWrapCached(() -> PacketUtil.setterFromData(PacketUtil.PING_CLASS, int.class, 0));
 
-    // We don't want to save this, just let it GC
-    static {
-        PacketUtil.LOOKUP = null;
-    }
+    // Dynamically initialized
+    public static MethodHandle CONNECTION_SEND_PACKET;
 
     private static MethodHandle getterFromData(Class<?> clazz, Class<?> fieldType, int index) throws Exception {
         if (clazz != null) {
@@ -102,6 +101,20 @@ public final class PacketUtil {
         }
 
         return null;
+    }
+
+    public static void sendPacket(Object playerConnection, Object packet) {
+        try {
+            if (PacketUtil.CONNECTION_SEND_PACKET == null) {
+                Method method = ReflectionUtil.getMethodByName(playerConnection.getClass(), "sendPacket");
+                PacketUtil.CONNECTION_SEND_PACKET = PacketUtil.LOOKUP.unreflect(method);
+            }
+
+            PacketUtil.CONNECTION_SEND_PACKET.invoke(playerConnection, packet);
+        } catch (Throwable throwable) {
+            PledgeImpl.LOGGER.severe("Could not send packet!");
+            throwable.printStackTrace();
+        }
     }
 
     public static void wakeUp() {

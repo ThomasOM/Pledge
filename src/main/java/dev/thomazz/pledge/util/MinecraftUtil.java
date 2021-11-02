@@ -12,6 +12,7 @@ public final class MinecraftUtil {
     private static final String NMS = MinecraftUtil.BASE.replace("org.bukkit.craftbukkit", "net.minecraft.server");
 
     // Some caching to speed up reflection
+    private static Method PLAYER_GET_HANDLE;
     private static Method SERVER_GET_METHOD;
     private static Field CONNECTION_FIELD;
     private static Field NETWORK_MANAGER_FIELD;
@@ -37,8 +38,12 @@ public final class MinecraftUtil {
     }
 
     public static Channel getChannelFromPlayer(Player player) throws Exception {
-        Method getHandle = player.getClass().getDeclaredMethod("getHandle");
-        Object handle = getHandle.invoke(player);
+        // Player Handle
+        if (MinecraftUtil.PLAYER_GET_HANDLE == null) {
+            MinecraftUtil.PLAYER_GET_HANDLE = player.getClass().getDeclaredMethod("getHandle");
+        }
+
+        Object handle = MinecraftUtil.PLAYER_GET_HANDLE.invoke(player);
 
         // Player Connection
         if (MinecraftUtil.CONNECTION_FIELD == null) {
@@ -60,5 +65,21 @@ public final class MinecraftUtil {
         }
 
         return (Channel) MinecraftUtil.CHANNEL_FIELD.get(networkManager);
+    }
+
+    public static Object getPlayerConnection(Player player) throws Exception {
+        // Player Handle
+        if (MinecraftUtil.PLAYER_GET_HANDLE == null) {
+            MinecraftUtil.PLAYER_GET_HANDLE = player.getClass().getDeclaredMethod("getHandle");
+        }
+
+        Object handle = MinecraftUtil.PLAYER_GET_HANDLE.invoke(player);
+
+        // Player Connection
+        if (MinecraftUtil.CONNECTION_FIELD == null) {
+            MinecraftUtil.CONNECTION_FIELD = ReflectionUtil.getFieldByClassNames(handle.getClass(), "PlayerConnection");
+        }
+
+        return MinecraftUtil.CONNECTION_FIELD.get(handle);
     }
 }

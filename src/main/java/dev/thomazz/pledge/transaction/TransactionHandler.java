@@ -4,6 +4,7 @@ import dev.thomazz.pledge.api.Direction;
 import dev.thomazz.pledge.api.HandlerInfo;
 import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.event.TransactionEvent;
+import dev.thomazz.pledge.util.MinecraftUtil;
 import dev.thomazz.pledge.util.PacketUtil;
 import io.netty.channel.Channel;
 import java.lang.ref.Reference;
@@ -15,6 +16,7 @@ import org.bukkit.entity.Player;
 public class TransactionHandler implements HandlerInfo {
     private final Reference<Player> playerReference;
     private final Reference<Channel> channelReference;
+    private final Reference<Object> connectionReference; // For quick access
     private final Direction direction;
     private final int min;
     private final int max;
@@ -26,10 +28,11 @@ public class TransactionHandler implements HandlerInfo {
     private TransactionPair receivingPair;
     private TransactionPair sendingPair;
 
-    TransactionHandler(Player player, Channel channel, Direction direction, int min, int max) {
+    TransactionHandler(Player player, Channel channel, Direction direction, int min, int max) throws Exception {
         // We don't want player objects and channels to persist because of this reference
         this.playerReference = new WeakReference<>(player);
         this.channelReference = new WeakReference<>(channel);
+        this.connectionReference = new WeakReference<>(MinecraftUtil.getPlayerConnection(player));
 
         this.direction = direction;
         this.min = min;
@@ -50,24 +53,22 @@ public class TransactionHandler implements HandlerInfo {
     }
 
     public void tickStart() {
-        if (this.isOpen()) {
-            this.sendingPair = new TransactionPair(this.index);
-            this.receivingPairMapping.put(this.index, this.sendingPair);
+        this.sendingPair = new TransactionPair(this.index);
+        this.receivingPairMapping.put(this.index, this.sendingPair);
 
-            // Write a transaction packet to the channel and call send start
-            this.getChannel().writeAndFlush(PacketUtil.buildTransactionPacket(this.index));
-            this.callEvent(TransactionEventType.SEND_START, this.sendingPair);
+        // Write a transaction packet to the channel and call send start
+        this.writeTransaction(this.index);
+        this.callEvent(TransactionEventType.SEND_START, this.sendingPair);
 
-            this.index = this.updateIndex(this.index);
-        }
+        this.index = this.updateIndex(this.index);
     }
 
     public void tickEnd() {
-        if (this.isOpen() && this.sendingPair != null) {
+        if (this.sendingPair != null) {
             this.sendingPair.setId2(this.index);
 
             // Write a transaction packet to the channel and call send end
-            this.getChannel().writeAndFlush(PacketUtil.buildTransactionPacket(this.index));
+            this.writeTransaction(this.index);
             this.callEvent(TransactionEventType.SEND_END, this.sendingPair);
 
             this.index = this.updateIndex(this.index);
@@ -104,8 +105,17 @@ public class TransactionHandler implements HandlerInfo {
     }
 
     public boolean isOpen() {
-        Channel channel = this.getChannel();
-        return channel != null && channel.isOpen();
+        return this.getChannel() != null && this.getChannel().isOpen();
+    }
+
+    private void writeTransaction(int index) {
+        try {
+            Object packet = PacketUtil.buildTransactionPacket(index);
+            PacketUtil.sendPacket(this.connectionReference.get(), packet);
+        } catch (Exception e) {
+            PledgeImpl.LOGGER.severe("Something went wrong sending a transaction packet!");
+            e.printStackTrace();
+        }
     }
 
     private void callEvent(TransactionEventType type, TransactionPair pair) {
