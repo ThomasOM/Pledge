@@ -17,6 +17,7 @@ public class TransactionHandler implements HandlerInfo {
     private final Reference<Player> playerReference;
     private final Reference<Channel> channelReference;
     private final Reference<Object> connectionReference; // For quick access
+
     private final Direction direction;
     private final int min;
     private final int max;
@@ -29,7 +30,7 @@ public class TransactionHandler implements HandlerInfo {
     private TransactionPair sendingPair;
 
     TransactionHandler(Player player, Channel channel, Direction direction, int min, int max) throws Exception {
-        // We don't want player objects and channels to persist because of this reference
+        // We don't want player objects and channels to persist because of these references
         this.playerReference = new WeakReference<>(player);
         this.channelReference = new WeakReference<>(channel);
         this.connectionReference = new WeakReference<>(MinecraftUtil.getPlayerConnection(player));

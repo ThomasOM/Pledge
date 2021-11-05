@@ -23,26 +23,29 @@ public class ServerInjector implements Injector {
 
         // Inject our hooked list for end of tick
         for (Field field : serverClass.getDeclaredFields()) {
-            if (field.getType().equals(List.class)) {
-                // Check if type parameters match one of the tickable class names used throughout different versions
-                Class<?> genericType = (Class<?>) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
-                if (!ServerInjector.TICKABLE_CLASS_NAMES.contains(genericType.getSimpleName())) {
-                    continue;
-                }
-
-                field.setAccessible(true);
-
-                // Use a list wrapper to check when the size method is called
-                HookedListWrapper<?> wrapper = new HookedListWrapper<Object>((List) field.get(server)) {
-                    @Override
-                    public void onSize() {
-                        PledgeImpl.INSTANCE.getTransactionManager().endTick();
+            try {
+                if (field.getType().equals(List.class)) {
+                    // Check if type parameters match one of the tickable class names used throughout different versions
+                    Class<?> genericType = (Class<?>) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                    if (!ServerInjector.TICKABLE_CLASS_NAMES.contains(genericType.getSimpleName())) {
+                        continue;
                     }
-                };
 
-                ReflectionUtil.setUnsafe(server, field, wrapper);
-                this.hookedField = field;
-                break;
+                    field.setAccessible(true);
+
+                    // Use a list wrapper to check when the size method is called
+                    HookedListWrapper<?> wrapper = new HookedListWrapper<Object>((List) field.get(server)) {
+                        @Override
+                        public void onSize() {
+                            PledgeImpl.INSTANCE.getTransactionManager().endTick();
+                        }
+                    };
+
+                    ReflectionUtil.setUnsafe(server, field, wrapper);
+                    this.hookedField = field;
+                    break;
+                }
+            } catch (Exception ignored) {
             }
         }
     }
