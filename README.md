@@ -9,7 +9,7 @@ Given below is a very simplified explanation how Pledge works and what it should
 
 As most of you who are here already know, Minecraft Java Edition uses the TCP protocol to send data between the client and the server.
 This protocol guarantees us packet order, even if data is dropped or duplicated.
-We can use this to our advantage by sending a transaction packet and the start and end of a tick.
+We can use this to our advantage by sending a transaction packet at the start and end of a tick.
 If we receive a response for these two packets from the client, we would logically know that every packet between these packets has also been received.
 
 Pledge simply sends a transaction packet when the tick starts and one when the tick ends to every player.
@@ -32,6 +32,9 @@ A transaction packet listener is included, in case you're not already listening 
 Please make sure that you set the 'events' setting to true, because it is not used by default.
 Simply implement the ```TransactionListener``` interface and create your own implementation.
 After that, you can register it using the ```Pledge#addListener``` method.
+
+**DISCLAIMER: If you are listening to packets yourself inside the netty pipeline, I recommend you listen to the transaction packets there. If you decide to use the included transaction listeners to confirm transactions, expect concurrency issues.**
+
 Below is an example of using Pledge with a transaction listener, where ```MyTransactionListener``` is your implementation.
 
 ```java
