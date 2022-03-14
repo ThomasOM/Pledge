@@ -106,7 +106,7 @@ public final class PacketUtil {
     public static void sendPacket(Object playerConnection, Object packet) {
         try {
             if (PacketUtil.CONNECTION_SEND_PACKET == null) {
-                Method method = ReflectionUtil.getMethodByName(playerConnection.getClass(), "sendPacket");
+                Method method = ReflectionUtil.getMethodByNames(playerConnection.getClass(), "sendPacket", "a");
                 PacketUtil.CONNECTION_SEND_PACKET = PacketUtil.LOOKUP.unreflect(method);
             }
 

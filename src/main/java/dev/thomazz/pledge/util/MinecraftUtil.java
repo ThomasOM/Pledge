@@ -47,7 +47,7 @@ public final class MinecraftUtil {
 
         // Player Connection
         if (MinecraftUtil.CONNECTION_FIELD == null) {
-            MinecraftUtil.CONNECTION_FIELD = ReflectionUtil.getFieldByClassNames(handle.getClass(), "PlayerConnection");
+            MinecraftUtil.CONNECTION_FIELD = ReflectionUtil.getFieldByClassNames(handle.getClass(), "PlayerConnection", "b");
         }
 
         Object connection = MinecraftUtil.CONNECTION_FIELD.get(handle);
@@ -77,7 +77,7 @@ public final class MinecraftUtil {
 
         // Player Connection
         if (MinecraftUtil.CONNECTION_FIELD == null) {
-            MinecraftUtil.CONNECTION_FIELD = ReflectionUtil.getFieldByClassNames(handle.getClass(), "PlayerConnection");
+            MinecraftUtil.CONNECTION_FIELD = ReflectionUtil.getFieldByClassNames(handle.getClass(), "PlayerConnection", "b");
         }
 
         return MinecraftUtil.CONNECTION_FIELD.get(handle);

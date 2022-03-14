@@ -1,9 +1,11 @@
 package dev.thomazz.pledge.util;
 
+import com.google.common.collect.ImmutableSet;
 import dev.thomazz.pledge.PledgeImpl;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Set;
 import sun.misc.Unsafe;
 
 @SuppressWarnings({"ConstantConditions", "unchecked"})
@@ -38,13 +40,13 @@ public final class ReflectionUtil {
     }
 
     public static Field getFieldByClassNames(Class<?> clazz, String... simpleNames)  throws NoSuchFieldException {
+        Set<String> set = ImmutableSet.copyOf(simpleNames);
+
         for (Field field : clazz.getDeclaredFields()) {
             String typeSimpleName = field.getType().getSimpleName();
-            for (String name : simpleNames) {
-                if (name.equals(typeSimpleName)) {
-                    field.setAccessible(true);
-                    return field;
-                }
+            if (set.contains(typeSimpleName)) {
+                field.setAccessible(true);
+                return field;
             }
         }
 
@@ -63,15 +65,17 @@ public final class ReflectionUtil {
         throw new NoSuchFieldException("Could not find field in class " + clazz.getName() + " with type " + type.getName());
     }
 
-    public static Method getMethodByName(Class<?> clazz, String name) throws NoSuchMethodException {
+    public static Method getMethodByNames(Class<?> clazz, String... names) throws NoSuchMethodException {
+        Set<String> set = ImmutableSet.copyOf(names);
+
         for (Method method : clazz.getDeclaredMethods()) {
-            if (name.equals(method.getName())) {
+            if (set.contains(method.getName())) {
                 method.setAccessible(true);
                 return method;
             }
         }
 
-        throw new NoSuchMethodException("Could not find method in class " + clazz.getName() + " with name " + name);
+        throw new NoSuchMethodException("Could not find method in class " + clazz.getName() + " with names " + Arrays.toString(names));
     }
 
     public static Class<?> getSuperClassByName(Class<?> clazz, String simpleName) {
