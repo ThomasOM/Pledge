@@ -13,8 +13,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PledgeImpl implements Pledge {
-    public static final Logger LOGGER = Logger.getLogger(PledgeImpl.class.getSimpleName());
     public static PledgeImpl INSTANCE;
+    public static Logger LOGGER; // Plugin logger instance has started with
 
     private final Injector injector;
     private final TransactionManager transactionManager;
@@ -23,8 +23,6 @@ public final class PledgeImpl implements Pledge {
     private boolean running;
 
     public PledgeImpl() {
-        PacketUtil.wakeUp(); // Load cached variables
-
         this.injector = new ServerInjector();
         this.transactionManager = new TransactionManager();
     }
@@ -59,6 +57,10 @@ public final class PledgeImpl implements Pledge {
     @Override
     public void start(JavaPlugin plugin) {
         this.validateRunState("start");
+
+        // Set up logger and load cached values
+        PledgeImpl.LOGGER = plugin.getLogger();
+        PacketUtil.wakeUp();
 
         // Register injection listener
         Bukkit.getPluginManager().registerEvents(new InjectListener(), plugin);
