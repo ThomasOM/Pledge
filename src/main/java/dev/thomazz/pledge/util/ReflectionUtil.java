@@ -1,11 +1,9 @@
 package dev.thomazz.pledge.util;
 
-import com.google.common.collect.ImmutableSet;
 import dev.thomazz.pledge.PledgeImpl;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Set;
 import sun.misc.Unsafe;
 
 @SuppressWarnings({"ConstantConditions", "unchecked"})
@@ -40,13 +38,13 @@ public final class ReflectionUtil {
     }
 
     public static Field getFieldByClassNames(Class<?> clazz, String... simpleNames)  throws NoSuchFieldException {
-        Set<String> set = ImmutableSet.copyOf(simpleNames);
-
-        for (Field field : clazz.getDeclaredFields()) {
-            String typeSimpleName = field.getType().getSimpleName();
-            if (set.contains(typeSimpleName)) {
-                field.setAccessible(true);
-                return field;
+        for (String name : simpleNames) {
+            for (Field field : clazz.getDeclaredFields()) {
+                String typeSimpleName = field.getType().getSimpleName();
+                if (name.equals(typeSimpleName)) {
+                    field.setAccessible(true);
+                    return field;
+                }
             }
         }
 
@@ -66,12 +64,12 @@ public final class ReflectionUtil {
     }
 
     public static Method getMethodByNames(Class<?> clazz, String... names) throws NoSuchMethodException {
-        Set<String> set = ImmutableSet.copyOf(names);
-
-        for (Method method : clazz.getDeclaredMethods()) {
-            if (set.contains(method.getName())) {
-                method.setAccessible(true);
-                return method;
+        for (String name : names) {
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (name.equals(method.getName())) {
+                    method.setAccessible(true);
+                    return method;
+                }
             }
         }
 

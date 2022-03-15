@@ -38,3 +38,6 @@ manifest.mf
 
 # build script
 deployscript.sh
+
+# test module
+test/
