@@ -21,7 +21,7 @@ public final class PacketUtil {
     private static MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     public static final MethodHandle OUT_TRANSACTION_CONSTRUCTOR = PacketUtil.constructorFromData(PacketUtil.OUT_TRANSACTION_CLASS, MethodType.methodType(void.class));
-    public static final MethodHandle PING_CONSTRUCTOR = PacketUtil.constructorFromData(PacketUtil.PING_CLASS, MethodType.methodType(void.class));
+    public static final MethodHandle PING_CONSTRUCTOR = PacketUtil.constructorFromData(PacketUtil.PING_CLASS, MethodType.methodType(void.class, int.class));
 
     // Method handles for transaction packets
     public static final MethodHandle IN_WINDOW_FIELD_GET = PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, int.class, 0);

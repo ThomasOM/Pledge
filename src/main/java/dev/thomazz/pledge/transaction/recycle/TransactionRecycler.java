@@ -16,7 +16,7 @@ public class TransactionRecycler extends Recycler<RecyclableTransaction> {
 					rawPacket = PacketUtil.OUT_TRANSACTION_CONSTRUCTOR.invoke();
 					break;
 				case PING_PONG:
-					rawPacket = PacketUtil.PING_CONSTRUCTOR.invoke();
+					rawPacket = PacketUtil.PING_CONSTRUCTOR.invoke(0);
 					break;
 			}
 
