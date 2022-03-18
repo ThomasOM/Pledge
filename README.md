@@ -28,12 +28,12 @@ public void onEnable() {
 }
 ```
 
-A transaction packet listener is included, in case you're not already listening to transaction packets yourself.
+A transaction event listener is included to listen to the built-in events.
+These events are called from the netty event loop, so they can be used along with your own packet listener.
 Please make sure that you set the 'events' setting to true, because it is not used by default.
 Simply implement the ```TransactionListener``` interface and create your own implementation.
 After that, you can register it using the ```Pledge#addListener``` method.
-
-**DISCLAIMER: If you are listening to packets yourself inside the netty pipeline, I recommend you listen to the transaction packets there. If you decide to use the included transaction listeners to confirm transactions, expect concurrency issues.**
+For more detailed information, read the API documentation.
 
 Below is an example of using Pledge with a transaction listener, where ```MyTransactionListener``` is your implementation.
 
