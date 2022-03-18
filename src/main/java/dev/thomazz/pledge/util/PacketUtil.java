@@ -3,6 +3,7 @@ package dev.thomazz.pledge.util;
 import dev.thomazz.pledge.PledgeImpl;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -19,43 +20,65 @@ public final class PacketUtil {
     // We use method handles because we're gonna call these very frequently
     private static MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
+    public static final MethodHandle OUT_TRANSACTION_CONSTRUCTOR = PacketUtil.constructorFromData(PacketUtil.OUT_TRANSACTION_CLASS, MethodType.methodType(void.class));
+    public static final MethodHandle PING_CONSTRUCTOR = PacketUtil.constructorFromData(PacketUtil.PING_CLASS, MethodType.methodType(void.class));
+
     // Method handles for transaction packets
-    public static final MethodHandle IN_WINDOW_FIELD_GET = PacketUtil.exceptionWrapCached(() -> PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, int.class, 0));
-    public static final MethodHandle IN_ACCEPT_FIELD_GET = PacketUtil.exceptionWrapCached(() -> PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, boolean.class, 0));
-    public static final MethodHandle IN_ACTION_FIELD_GET = PacketUtil.exceptionWrapCached(() -> PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, short.class, 0));
+    public static final MethodHandle IN_WINDOW_FIELD_GET = PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, int.class, 0);
+    public static final MethodHandle IN_ACCEPT_FIELD_GET = PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, boolean.class, 0);
+    public static final MethodHandle IN_ACTION_FIELD_GET = PacketUtil.getterFromData(PacketUtil.IN_TRANSACTION_CLASS, short.class, 0);
 
-    public static final MethodHandle OUT_WINDOW_FIELD_SET = PacketUtil.exceptionWrapCached(() -> PacketUtil.setterFromData(PacketUtil.OUT_TRANSACTION_CLASS, int.class, 0));
-    public static final MethodHandle OUT_ACCEPT_FIELD_SET = PacketUtil.exceptionWrapCached(() -> PacketUtil.setterFromData(PacketUtil.OUT_TRANSACTION_CLASS, boolean.class, 0));
-    public static final MethodHandle OUT_ACTION_FIELD_SET = PacketUtil.exceptionWrapCached(() -> PacketUtil.setterFromData(PacketUtil.OUT_TRANSACTION_CLASS, short.class, 0));
+    public static final MethodHandle OUT_WINDOW_FIELD_SET = PacketUtil.setterFromData(PacketUtil.OUT_TRANSACTION_CLASS, int.class, 0);
+    public static final MethodHandle OUT_ACCEPT_FIELD_SET = PacketUtil.setterFromData(PacketUtil.OUT_TRANSACTION_CLASS, boolean.class, 0);
+    public static final MethodHandle OUT_ACTION_FIELD_SET = PacketUtil.setterFromData(PacketUtil.OUT_TRANSACTION_CLASS, short.class, 0);
 
-    private static int TRANSACTION_WINDOW_ID = 0;
-    private static boolean TRANSACTION_ACCEPT_STATE = false;
+    public static final MethodHandle OUT_WINDOW_FIELD_GET = PacketUtil.getterFromData(PacketUtil.OUT_TRANSACTION_CLASS, int.class, 0);
+    public static final MethodHandle OUT_ACCEPT_FIELD_GET = PacketUtil.getterFromData(PacketUtil.OUT_TRANSACTION_CLASS, boolean.class, 0);
+    public static final MethodHandle OUT_ACTION_FIELD_GET = PacketUtil.getterFromData(PacketUtil.OUT_TRANSACTION_CLASS, short.class, 0);
+
+    public static int TRANSACTION_WINDOW_ID = 0;
+    public static boolean TRANSACTION_ACCEPT_STATE = false;
 
     // Method handles for ping/pong packets
-    public static final MethodHandle PONG_ID_FIELD_GET = PacketUtil.exceptionWrapCached(() -> PacketUtil.getterFromData(PacketUtil.PONG_CLASS, int.class, 0));
-    public static final MethodHandle PING_ID_FIELD_SET = PacketUtil.exceptionWrapCached(() -> PacketUtil.setterFromData(PacketUtil.PING_CLASS, int.class, 0));
+    public static final MethodHandle PONG_ID_FIELD_GET = PacketUtil.getterFromData(PacketUtil.PONG_CLASS, int.class, 0);
+    public static final MethodHandle PING_ID_FIELD_SET = PacketUtil.setterFromData(PacketUtil.PING_CLASS, int.class, 0);
+    public static final MethodHandle PING_ID_FIELD_GET = PacketUtil.getterFromData(PacketUtil.PING_CLASS, int.class, 0);
 
     // Dynamically initialized
     public static MethodHandle CONNECTION_SEND_PACKET;
 
-    private static MethodHandle getterFromData(Class<?> clazz, Class<?> fieldType, int index) throws Exception {
-        if (clazz != null) {
-            Field field = ReflectionUtil.get(clazz, fieldType, index);
-            field.setAccessible(true);
-            return PacketUtil.LOOKUP.unreflectGetter(field);
-        } else {
-            return null;
-        }
+    private static MethodHandle getterFromData(Class<?> clazz, Class<?> fieldType, int index) {
+        return PacketUtil.exceptionWrapCached(() -> {
+            if (clazz != null) {
+                Field field = ReflectionUtil.get(clazz, fieldType, index);
+                field.setAccessible(true);
+                return PacketUtil.LOOKUP.unreflectGetter(field);
+            } else {
+                return null;
+            }
+        });
     }
 
-    private static MethodHandle setterFromData(Class<?> clazz, Class<?> fieldType, int index) throws Exception {
-        if (clazz != null) {
-            Field field = ReflectionUtil.get(clazz, fieldType, index);
-            field.setAccessible(true);
-            return PacketUtil.LOOKUP.unreflectSetter(field);
-        } else {
-            return null;
-        }
+    private static MethodHandle setterFromData(Class<?> clazz, Class<?> fieldType, int index) {
+        return PacketUtil.exceptionWrapCached(() -> {
+            if (clazz != null) {
+                Field field = ReflectionUtil.get(clazz, fieldType, index);
+                field.setAccessible(true);
+                return PacketUtil.LOOKUP.unreflectSetter(field);
+            } else {
+                return null;
+            }
+        });
+    }
+
+    private static MethodHandle constructorFromData(Class<?> clazz, MethodType type) {
+        return PacketUtil.exceptionWrapCached(() -> {
+            if (clazz != null) {
+                return PacketUtil.LOOKUP.findConstructor(clazz, type);
+            } else {
+                return null;
+            }
+        });
     }
 
     private static <T> T exceptionWrapCached(ThrowingSupplier<T> supplier) {
@@ -70,34 +93,6 @@ public final class PacketUtil {
                 PledgeImpl.LOGGER.severe("Exception setting up packet cache!");
                 throwable.printStackTrace();
             }
-        }
-
-        return null;
-    }
-
-    public static Object buildTransactionPacket(int actionNumber) {
-        try {
-            Object packet;
-            switch (PacketUtil.MODE) {
-                default:
-                case TRANSACTION:
-                    packet = PacketUtil.OUT_TRANSACTION_CLASS.newInstance();
-
-                    PacketUtil.OUT_WINDOW_FIELD_SET.invoke(packet, PacketUtil.TRANSACTION_WINDOW_ID);
-                    PacketUtil.OUT_ACCEPT_FIELD_SET.invoke(packet, PacketUtil.TRANSACTION_ACCEPT_STATE);
-                    PacketUtil.OUT_ACTION_FIELD_SET.invoke(packet, (short) actionNumber);
-                    break;
-                case PING_PONG:
-                    packet = ReflectionUtil.instantiateUnsafe(PacketUtil.PING_CLASS);
-
-                    PacketUtil.PING_ID_FIELD_SET.invoke(packet, actionNumber);
-                    break;
-            }
-
-            return packet;
-        } catch (Throwable throwable) {
-            PledgeImpl.LOGGER.severe("Could not build transaction packet!");
-            throwable.printStackTrace();
         }
 
         return null;

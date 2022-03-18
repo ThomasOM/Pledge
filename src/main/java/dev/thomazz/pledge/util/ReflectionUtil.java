@@ -1,27 +1,11 @@
 package dev.thomazz.pledge.util;
 
-import dev.thomazz.pledge.PledgeImpl;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import sun.misc.Unsafe;
 
-@SuppressWarnings({"ConstantConditions", "unchecked"})
 public final class ReflectionUtil {
-    private static final Unsafe UNSAFE = ReflectionUtil.getUnsafeInstance();
-
-    private static Unsafe getUnsafeInstance() {
-        try {
-            Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            return (Unsafe) unsafeField.get(null);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            PledgeImpl.LOGGER.severe("Could not locate Unsafe object!");
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     public static Field get(Class<?> oClass, Class<?> type, int index) throws NoSuchFieldException {
         int i = 0;
         for (Field field : oClass.getDeclaredFields()) {
@@ -91,11 +75,9 @@ public final class ReflectionUtil {
         }
     }
 
-    public static <T> void setUnsafe(Object object, Field field, T value) {
-        ReflectionUtil.UNSAFE.putObject(object, ReflectionUtil.UNSAFE.objectFieldOffset(field), value);
-    }
-
-    public static <T> T instantiateUnsafe(Class<T> clazz) throws Exception{
-        return (T) ReflectionUtil.UNSAFE.allocateInstance(clazz);
+    public static void removeFinalModifier(Field field) throws NoSuchFieldException, IllegalAccessException {
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
     }
 }

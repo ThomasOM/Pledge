@@ -6,17 +6,21 @@ import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.event.TransactionEvent;
 import dev.thomazz.pledge.util.MinecraftUtil;
 import dev.thomazz.pledge.util.PacketUtil;
+import dev.thomazz.pledge.transaction.recycle.RecyclableTransaction;
+import dev.thomazz.pledge.transaction.recycle.TransactionRecycler;
 import io.netty.channel.Channel;
+import io.netty.util.collection.IntObjectHashMap;
+import io.netty.util.collection.IntObjectMap;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
-import java.util.Map;
 import org.bukkit.entity.Player;
 
 public class TransactionHandler implements HandlerInfo {
     private final Reference<Player> playerReference;
     private final Reference<Channel> channelReference;
     private final Reference<Object> connectionReference; // For quick access
+
+    private final IntObjectMap<TransactionPair> indexMapping = new IntObjectHashMap<>();
 
     private final Direction direction;
     private final int min;
@@ -25,7 +29,6 @@ public class TransactionHandler implements HandlerInfo {
     private int index;
     private int expectedIndex;
 
-    private Map<Integer, TransactionPair> receivingPairMapping = new HashMap<>();
     private TransactionPair receivingPair;
     private TransactionPair sendingPair;
 
@@ -53,27 +56,35 @@ public class TransactionHandler implements HandlerInfo {
         return this.playerReference.get();
     }
 
-    public void tickStart() {
-        this.sendingPair = new TransactionPair(this.index);
-        this.receivingPairMapping.put(this.index, this.sendingPair);
+    public boolean tickStart() {
+        this.onEventLoop(() -> {
+            this.sendingPair = new TransactionPair(this.index);
+            this.addIndex(this.index, this.sendingPair);
 
-        // Write a transaction packet to the channel and call send start
-        this.writeTransaction(this.index);
-        this.callEvent(TransactionEventType.SEND_START, this.sendingPair);
-
-        this.index = this.updateIndex(this.index);
-    }
-
-    public void tickEnd() {
-        if (this.sendingPair != null) {
-            this.sendingPair.setId2(this.index);
-
-            // Write a transaction packet to the channel and call send end
+            // Write a transaction packet to the channel and call send start
             this.writeTransaction(this.index);
-            this.callEvent(TransactionEventType.SEND_END, this.sendingPair);
+            this.callEvent(TransactionEventType.SEND_START, this.sendingPair);
 
             this.index = this.updateIndex(this.index);
-        }
+        });
+
+        return this.isClosed();
+    }
+
+    public boolean tickEnd() {
+        this.onEventLoop(() -> {
+            if (this.sendingPair != null) {
+                this.sendingPair.setId2(this.index);
+
+                // Write a transaction packet to the channel and call send end
+                this.writeTransaction(this.index);
+                this.callEvent(TransactionEventType.SEND_END, this.sendingPair);
+
+                this.index = this.updateIndex(this.index);
+            }
+        });
+
+        return this.isClosed();
     }
 
     public void handleIncomingTransaction(int id) {
@@ -92,7 +103,7 @@ public class TransactionHandler implements HandlerInfo {
                 this.receivingPair = null;
             } else {
                 // Locate receiving pair
-                this.receivingPair = this.receivingPairMapping.remove(id);
+                this.receivingPair = this.fromIndex(id);
 
                 // Throw error if ID is not the expected index
                 if (id != this.expectedIndex) {
@@ -105,17 +116,25 @@ public class TransactionHandler implements HandlerInfo {
         }
     }
 
-    public boolean isOpen() {
-        return this.getChannel() != null && this.getChannel().isOpen();
+    private boolean isClosed() {
+        Channel channel = this.getChannel();
+        return channel == null || !channel.isOpen();
     }
 
     private void writeTransaction(int index) {
         try {
-            Object packet = PacketUtil.buildTransactionPacket(index);
-            PacketUtil.sendPacket(this.connectionReference.get(), packet);
-        } catch (Exception e) {
+            TransactionRecycler recycler = PledgeImpl.INSTANCE.getRecycler();
+            RecyclableTransaction recyclable = recycler.get();
+            recyclable.setupIndex(index);
+
+            // We can't write recyclables directly to the channel, use the raw packet
+            PacketUtil.sendPacket(this.connectionReference.get(), recyclable.getRawPacket());
+
+            // We can recycle after this since this is on the event loop
+            recyclable.recycle();
+        } catch (Throwable throwable) {
             PledgeImpl.LOGGER.severe("Something went wrong sending a transaction packet!");
-            e.printStackTrace();
+            throwable.printStackTrace();
         }
     }
 
@@ -124,6 +143,32 @@ public class TransactionHandler implements HandlerInfo {
             TransactionEvent event = new TransactionEvent(this, pair);
             PledgeImpl.INSTANCE.getTransactionManager().callEvent(type, event);
         }
+    }
+
+    private void onEventLoop(Runnable runnable) {
+        Channel channel = this.getChannel();
+        if (channel != null && channel.isOpen()) {
+            channel.eventLoop().execute(runnable);
+        }
+    }
+
+    private void addIndex(int index, TransactionPair pair) {
+        index = this.convertIndex(index);
+        synchronized (this.indexMapping) {
+            this.indexMapping.put(index, pair);
+        }
+    }
+
+    private TransactionPair fromIndex(int index) {
+        index = this.convertIndex(index);
+        synchronized (this.indexMapping) {
+            return this.indexMapping.get(index);
+        }
+    }
+
+    // Converts storage index into positive range
+    private int convertIndex(int index) {
+        return this.max - this.min + index;
     }
 
     private int updateIndex(int index) {

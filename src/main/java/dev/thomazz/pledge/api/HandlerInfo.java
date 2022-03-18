@@ -11,14 +11,14 @@ public interface HandlerInfo {
     /**
      * Gets the netty channel of the connection.
      *
-     * @return - The channel
+     * @return - The channel, might be null if cleaned
      */
     Channel getChannel();
 
     /**
      * Gets player associated with the channel, could be null if the player is not initialized yet.
      *
-     * @return - The player
+     * @return - The player, might be null if not initialized or removed
      */
     Player getPlayer();
 }

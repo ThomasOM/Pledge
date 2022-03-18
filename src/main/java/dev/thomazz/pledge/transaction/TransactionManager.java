@@ -5,13 +5,13 @@ import dev.thomazz.pledge.api.Direction;
 import dev.thomazz.pledge.api.event.TransactionEvent;
 import dev.thomazz.pledge.api.event.TransactionListener;
 import dev.thomazz.pledge.inject.net.PledgePacketHandler;
+import dev.thomazz.pledge.transaction.recycle.TransactionRecycler;
 import dev.thomazz.pledge.util.MinecraftUtil;
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import io.netty.channel.ChannelHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,11 +30,7 @@ public class TransactionManager {
     // Starts the transaction sending task
     public void start(JavaPlugin plugin) {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            this.transactionHandlers.removeIf(pinger -> {
-                pinger.tickStart();
-                return !pinger.isOpen();
-            });
-
+            this.transactionHandlers.removeIf(TransactionHandler::tickStart);
             this.finishedTick = false;
         }, 0, 1);
     }
@@ -43,11 +39,7 @@ public class TransactionManager {
     public void endTick() {
         if (!this.finishedTick) {
             this.finishedTick = true;
-
-            this.transactionHandlers.removeIf(pinger -> {
-                pinger.tickEnd();
-                return !pinger.isOpen();
-            });
+            this.transactionHandlers.removeIf(TransactionHandler::tickEnd);
         }
     }
 

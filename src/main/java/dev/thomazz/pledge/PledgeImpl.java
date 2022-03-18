@@ -7,6 +7,7 @@ import dev.thomazz.pledge.inject.InjectListener;
 import dev.thomazz.pledge.inject.ServerInjector;
 import dev.thomazz.pledge.inject.Injector;
 import dev.thomazz.pledge.transaction.TransactionManager;
+import dev.thomazz.pledge.transaction.recycle.TransactionRecycler;
 import dev.thomazz.pledge.util.PacketUtil;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
@@ -14,17 +15,22 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PledgeImpl implements Pledge {
     public static PledgeImpl INSTANCE;
-    public static Logger LOGGER; // Plugin logger instance has started with
+    public static final Logger LOGGER = Logger.getLogger(Pledge.class.getSimpleName());
 
     private final Injector injector;
     private final TransactionManager transactionManager;
+    private final TransactionRecycler recycler;
 
     private boolean events;
     private boolean running;
 
     public PledgeImpl() {
+        // Load cached values
+        PacketUtil.wakeUp();
+
         this.injector = new ServerInjector();
         this.transactionManager = new TransactionManager();
+        this.recycler = new TransactionRecycler();
     }
 
     @Override
@@ -57,10 +63,6 @@ public final class PledgeImpl implements Pledge {
     @Override
     public void start(JavaPlugin plugin) {
         this.validateRunState("start");
-
-        // Set up logger and load cached values
-        PledgeImpl.LOGGER = plugin.getLogger();
-        PacketUtil.wakeUp();
 
         // Register injection listener
         Bukkit.getPluginManager().registerEvents(new InjectListener(), plugin);
@@ -110,6 +112,10 @@ public final class PledgeImpl implements Pledge {
 
     public TransactionManager getTransactionManager() {
         return this.transactionManager;
+    }
+
+    public TransactionRecycler getRecycler() {
+        return this.recycler;
     }
 
     public boolean hasEvents() {

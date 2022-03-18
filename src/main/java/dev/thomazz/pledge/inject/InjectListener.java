@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 // We only need this to inject players on join
 public class InjectListener implements Listener {
     @EventHandler
-    public void onSpawnEvent(PlayerJoinEvent event) {
+    public void onJoin(PlayerJoinEvent event) {
         PledgeImpl.INSTANCE.getTransactionManager().createTransactionHandler(event.getPlayer());
     }
 }
