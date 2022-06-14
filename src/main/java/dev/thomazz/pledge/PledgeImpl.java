@@ -44,6 +44,11 @@ public final class PledgeImpl implements Pledge {
     public PledgeImpl range(int min, int max) {
         this.validateRunState("set range");
 
+        // Should always use negative ids to prevent conflicts
+        if (max >= 0) {
+            throw new IllegalArgumentException("Range needs to be negative!");
+        }
+
         // Quickly verify if range is valid
         if (min >= max) {
             throw new IllegalArgumentException("Min range boundary can not be higher than or equal to max!");

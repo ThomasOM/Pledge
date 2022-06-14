@@ -166,9 +166,8 @@ public class TransactionHandler implements HandlerInfo {
         }
     }
 
-    // Converts storage index into positive range
     private int convertIndex(int index) {
-        return this.max - this.min + index;
+        return Math.abs(index); // Right now we only support negative ids
     }
 
     private int updateIndex(int index) {

@@ -11,7 +11,7 @@ public interface Pledge {
 
     /**
      * Sets the range the action number of transaction packets should vary between.
-     * A 'max' value equal to or above 0 should not be used since it can interfere with inventory actions.
+     * A 'max' value equal to or higher than 0 should never be used since it can interfere with normal inventory actions.
      * A range larger than at least 800 is recommended, assuming you time players out after 20 seconds.
      * Can not be set while running.
      *
