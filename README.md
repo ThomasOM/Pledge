@@ -64,7 +64,7 @@ If you want to use this in your project, you can add it as a Maven dependency:
   <dependency>
     <groupId>dev.thomazz</groupId>
     <artifactId>pledge</artifactId>
-    <version>1.2</version>
+    <version>1.3</version>
   </dependency>
 </dependencies>
 ````
