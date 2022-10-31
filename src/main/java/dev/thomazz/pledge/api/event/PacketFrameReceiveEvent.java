@@ -7,21 +7,25 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
+/**
+ * Called when receiving a response from the client corresponding to a {@link PacketFrame}
+ * For extra info see {@link ReceiveType}
+ */
 @Getter
 @RequiredArgsConstructor
-public class PacketFrameEvent extends Event {
+public class PacketFrameReceiveEvent extends Event {
 	private static final HandlerList handlers = new HandlerList();
 
 	private final Player player;
 	private final PacketFrame frame;
-	private final FrameEventType type;
+	private final ReceiveType type;
 
 	@Override
 	public HandlerList getHandlers() {
-		return PacketFrameEvent.handlers;
+		return PacketFrameReceiveEvent.handlers;
 	}
 
 	public static HandlerList getHandlerList() {
-		return PacketFrameEvent.handlers;
+		return PacketFrameReceiveEvent.handlers;
 	}
 }

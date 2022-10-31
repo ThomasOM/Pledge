@@ -9,7 +9,7 @@ public interface PacketTickExaminer {
 	/**
 	 * Determines if the packets in the current server tick should be tracked using a {@link PacketFrame}
 	 *
-	 * @param packets - Packets sent from server to player
+	 * @param packets - Queue of raw packet objects sent from server to player
 	 * @return        - If the packets should be tracked with a {@link PacketFrame}
 	 */
 	boolean shouldTrack(Queue<Object> packets);

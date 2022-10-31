@@ -1,5 +1,6 @@
 package dev.thomazz.pledge.api.event;
 
+import dev.thomazz.pledge.api.PacketFrame;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
@@ -7,22 +8,23 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- * Called when an error is detected in the frame order.
- * For extra info see {@link ErrorType}
+ * Called when a packet frame is sent to the player.
  */
 @Getter
 @RequiredArgsConstructor
-public class PacketFrameErrorEvent extends Event {
+public class PacketFrameSendEvent extends Event {
 	private static final HandlerList handlers = new HandlerList();
+
 	private final Player player;
-	private final ErrorType type;
+	private final PacketFrame current;
+	private final PacketFrame next;
 
 	@Override
 	public HandlerList getHandlers() {
-		return PacketFrameErrorEvent.handlers;
+		return PacketFrameSendEvent.handlers;
 	}
 
 	public static HandlerList getHandlerList() {
-		return PacketFrameErrorEvent.handlers;
+		return PacketFrameSendEvent.handlers;
 	}
 }
