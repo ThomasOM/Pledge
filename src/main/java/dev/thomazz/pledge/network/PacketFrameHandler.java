@@ -62,13 +62,16 @@ public class PacketFrameHandler extends ChannelDuplexHandler {
 	}
 
 	// Wraps packet queue in two signaling packets, creating a new packet frame
-	public void tryWrapPacketQueue() throws Exception {
+	private void tryWrapPacketQueue() throws Exception {
 		if (this.tickExaminer.shouldTrack(this.packetQueue)) {
 			int id1 = this.playerHandler.getSendingFrame().getId1();
 			int id2 = this.playerHandler.getSendingFrame().getId2();
 
-			this.packetQueue.addFirst(this.signalProvider.buildPacket(id1));
-			this.packetQueue.addLast(this.signalProvider.buildPacket(id2));
+			Object packet1 = this.signalProvider.buildPacket(id1);
+			Object packet2 = this.signalProvider.buildPacket(id2);
+
+			this.packetQueue.addFirst(packet1);
+			this.packetQueue.addLast(packet2);
 
 			this.playerHandler.incrementFrame();
 		}

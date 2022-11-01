@@ -22,6 +22,7 @@ public final class ReflectionUtil {
         for (Field field : clazz.getDeclaredFields()) {
             Class<?> foundType = field.getType();
             if (type.isAssignableFrom(foundType)) {
+                field.setAccessible(true);
                 return field;
             }
         }

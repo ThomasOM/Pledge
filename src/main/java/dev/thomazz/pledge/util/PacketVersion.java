@@ -7,7 +7,9 @@ public enum PacketVersion {
 	MODERN;
 
 	public static PacketVersion getCurrentVersion() {
-		int minorVersion = Integer.parseInt(Bukkit.getVersion().split(".")[1]);
-		return minorVersion >= 17 ? LEGACY : MODERN;
+		String versionString = Bukkit.getVersion();
+		String[] split = versionString.split("[.]");
+		int minorVersion = Integer.parseInt(split[1]);
+		return minorVersion >= 17 ? MODERN : LEGACY;
 	}
 }

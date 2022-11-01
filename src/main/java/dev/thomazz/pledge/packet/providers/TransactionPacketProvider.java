@@ -23,7 +23,7 @@ public class TransactionPacketProvider implements SignalPacketProvider {
 
 	@Override
 	public Object buildPacket(int id) throws Exception {
-		return this.outTransactionConstructor.newInstance(0, (short) id, true);
+		return this.outTransactionConstructor.newInstance(0, (short) id, false);
 	}
 
 	@Override

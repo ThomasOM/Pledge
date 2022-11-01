@@ -49,7 +49,7 @@ public class PlayerHandler {
 		PacketTickExaminer examiner = pledge.getPacketTickExaminer();
 
 		PacketFrameHandler packetFrame = new PacketFrameHandler(this, provider, examiner);
-		this.channel.pipeline().addAfter("packet_handler", "pledge_frame_handler", packetFrame);
+		this.channel.pipeline().addBefore("packet_handler", "pledge_frame_handler", packetFrame);
 	}
 
 	private int getAndUpdateId() {
@@ -57,7 +57,7 @@ public class PlayerHandler {
 
 		int increment = Integer.compare(this.rangeEnd - this.rangeStart, 0);
 		this.sendingId += increment;
-		if (this.sendingId > this.rangeEnd) {
+		if (this.rangeEnd > this.rangeStart ? this.sendingId > this.rangeEnd : this.sendingId < this.rangeEnd) {
 			this.sendingId = this.rangeStart;
 		}
 
@@ -70,7 +70,7 @@ public class PlayerHandler {
 
 	public void receiveId(int id) {
 		// Make sure the ID is within the range
-		if (id >= Math.min(this.rangeStart, this.rangeEnd) && id <= Math.max(this.rangeStart, this.rangeEnd)) {
+		if (id < Math.min(this.rangeStart, this.rangeEnd) || id > Math.max(this.rangeStart, this.rangeEnd)) {
 			return;
 		}
 
