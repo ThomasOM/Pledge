@@ -34,18 +34,28 @@ public interface Pledge {
 	Pledge setRange(int start, int end);
 
 	/**
-	 * Sets the tick examiner to determine if the packets in a tick should be tracked with a {@link PacketFrame}.
+	 * Sets the policy for the Pledge netty handler on how to create {@link PacketFrame}s
+	 * Note: Only change this setting if you know what you are doing!
 	 *
-	 * @param examiner - Examiner to set.
+	 * @param policy - Set policy
+	 * @return       -
 	 */
-	Pledge setPacketExaminer(PacketTickExaminer examiner);
+	Pledge setPacketWritePolicy(PacketWritePolicy policy);
+
+	/**
+	 * Tracks packets for the current tick, creating a new {@link PacketFrame}.
+	 *
+	 * @param player - Player to create frame for
+	 * @return       - Created frame
+	 */
+	PacketFrame createFrame(Player player);
 
 	/**
 	 * Gets the next {@link PacketFrame} the player will be sent.
-	 * When tracking a packet and you need to know the corresponding {@link PacketFrame} you can use this method.
+	 * Returns an empty result if no frame was created for the current tick using {@link #createFrame(Player)}
 	 *
 	 * @param player - Player to get frame for
-	 * @return       - Current frame for packet that will be sent to player
+	 * @return       - Next frame
 	 */
-	 Optional<PacketFrame> getCurrentFrame(Player player);
+	 Optional<PacketFrame> getNextFrame(Player player);
 }

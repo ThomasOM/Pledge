@@ -17,7 +17,6 @@ public class PacketFrameSendEvent extends Event {
 
 	private final Player player;
 	private final PacketFrame current;
-	private final PacketFrame next;
 
 	@Override
 	public HandlerList getHandlers() {

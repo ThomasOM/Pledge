@@ -1,7 +1,7 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
-import dev.thomazz.pledge.api.PacketTickExaminer;
+import dev.thomazz.pledge.api.PacketWritePolicy;
 import dev.thomazz.pledge.api.Pledge;
 import dev.thomazz.pledge.packet.SignalPacketProvider;
 import dev.thomazz.pledge.packet.SignalPacketProviderFactory;
@@ -25,10 +25,10 @@ public class PledgeImpl implements Pledge, Listener {
 	private final SignalPacketProvider signalPacketProvider = SignalPacketProviderFactory.build();
 	private final Map<Player, PlayerHandler> playerHandlers = new HashMap<>();
 
+	private PacketWritePolicy packetWritePolicy = PacketWritePolicy.WRITE_FLUSH;
 	private JavaPlugin plugin;
 
 	// Default values, can modify through API
-	private PacketTickExaminer packetTickExaminer = packets -> false;
 	private int rangeStart = -2000;
 	private int rangeEnd = -3000;
 
@@ -59,14 +59,20 @@ public class PledgeImpl implements Pledge, Listener {
 	}
 
 	@Override
-	public PledgeImpl setPacketExaminer(PacketTickExaminer examiner) {
-		this.packetTickExaminer = examiner;
+	public Pledge setPacketWritePolicy(PacketWritePolicy policy) {
+		this.packetWritePolicy = policy;
 		return this;
 	}
 
 	@Override
-	public Optional<PacketFrame> getCurrentFrame(Player player) {
-		return PledgeImpl.getInstance().getHandler(player).map(PlayerHandler::getSendingFrame);
+	public PacketFrame createFrame(Player player) {
+		return this.getHandler(player).map(PlayerHandler::createNextFrame)
+			.orElseThrow(() -> new IllegalArgumentException("No handler present for player!"));
+	}
+
+	@Override
+	public Optional<PacketFrame> getNextFrame(Player player) {
+		return this.getHandler(player).flatMap(PlayerHandler::getNextFrame);
 	}
 
 	@EventHandler

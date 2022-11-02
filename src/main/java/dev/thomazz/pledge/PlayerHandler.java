@@ -1,35 +1,39 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
-import dev.thomazz.pledge.api.PacketTickExaminer;
+import dev.thomazz.pledge.api.PacketWritePolicy;
 import dev.thomazz.pledge.api.event.ErrorType;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.api.event.ReceiveType;
 import dev.thomazz.pledge.api.event.PacketFrameErrorEvent;
 import dev.thomazz.pledge.api.event.PacketFrameReceiveEvent;
-import dev.thomazz.pledge.network.PacketFrameHandler;
+import dev.thomazz.pledge.network.PacketFrameHandlerFactory;
 import dev.thomazz.pledge.packet.SignalPacketProvider;
 import dev.thomazz.pledge.util.MinecraftUtil;
 import io.netty.channel.Channel;
+
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import io.netty.channel.ChannelHandler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
-@Getter
 public class PlayerHandler {
 	private final Queue<PacketFrame> frameQueue = new ConcurrentLinkedQueue<>();
 
+	@Getter
 	private final Player player;
 	private final Channel channel;
 
 	private final int rangeStart;
 	private final int rangeEnd;
 
-	private int sendingId;
-	private PacketFrame sendingFrame;
+	private int id;
+	private PacketFrame nextFrame;
 	private PacketFrame receivingFrame;
 
 	public PlayerHandler(Player player) throws Exception {
@@ -37,28 +41,31 @@ public class PlayerHandler {
 		this.channel = MinecraftUtil.getChannelFromPlayer(player);
 
 		PledgeImpl pledge = PledgeImpl.getInstance();
-		this.sendingId = this.rangeStart = pledge.getRangeStart();
+		this.id = this.rangeStart = pledge.getRangeStart();
 		this.rangeEnd = pledge.getRangeEnd();
 
-		this.sendingFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
+		this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
 		this.injectPacketFrameHandler(pledge);
 	}
 
 	private void injectPacketFrameHandler(PledgeImpl pledge) {
 		SignalPacketProvider provider = pledge.getSignalPacketProvider();
-		PacketTickExaminer examiner = pledge.getPacketTickExaminer();
+		PacketWritePolicy policy = pledge.getPacketWritePolicy();
 
-		PacketFrameHandler packetFrame = new PacketFrameHandler(this, provider, examiner);
-		this.channel.pipeline().addBefore("packet_handler", "pledge_frame_handler", packetFrame);
+		ChannelHandler outbound = PacketFrameHandlerFactory.buildOutbound(this, provider, policy);
+		ChannelHandler inbound =  PacketFrameHandlerFactory.buildInbound(this, provider);
+
+		this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
+		this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
 	}
 
 	private int getAndUpdateId() {
-		int previous = this.sendingId;
+		int previous = this.id;
 
 		int increment = Integer.compare(this.rangeEnd - this.rangeStart, 0);
-		this.sendingId += increment;
-		if (this.rangeEnd > this.rangeStart ? this.sendingId > this.rangeEnd : this.sendingId < this.rangeEnd) {
-			this.sendingId = this.rangeStart;
+		this.id += increment;
+		if (this.rangeEnd > this.rangeStart ? this.id > this.rangeEnd : this.id < this.rangeEnd) {
+			this.id = this.rangeStart;
 		}
 
 		return previous;
@@ -92,10 +99,22 @@ public class PlayerHandler {
 		}
 	}
 
-	public void incrementFrame() {
-		PacketFrame current = this.sendingFrame;
-		this.frameQueue.offer(current);
-		this.sendingFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
-		Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(this.player, current, this.sendingFrame));
+	public void queueFrame() {
+		this.frameQueue.offer(this.nextFrame);
+		Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(this.player, this.nextFrame));
+		this.nextFrame = null;
+	}
+
+	public Optional<PacketFrame> getNextFrame() {
+		return Optional.ofNullable(this.nextFrame);
+	}
+
+	// Creates a new frame for the current tick if there is not already one
+	public PacketFrame createNextFrame() {
+		if (this.nextFrame == null) {
+			this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
+		}
+
+		return this.nextFrame;
 	}
 }
