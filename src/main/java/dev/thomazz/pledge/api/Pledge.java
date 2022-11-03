@@ -26,6 +26,12 @@ public interface Pledge {
 	Pledge start(JavaPlugin plugin);
 
 	/**
+	 * Ends and cleans up the API instance, clearing all of the old data.
+	 * This does not need to be called on shutdown, but should be used if support plugin reloading is desired.
+	 */
+	void destroy();
+
+	/**
 	 * Sets the range for the {@link PacketFrame} ids.
 	 *
 	 * @param start - Starting id for range

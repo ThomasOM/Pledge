@@ -12,6 +12,7 @@ import dev.thomazz.pledge.packet.SignalPacketProvider;
 import dev.thomazz.pledge.util.MinecraftUtil;
 import io.netty.channel.Channel;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -117,5 +118,13 @@ public class PlayerHandler {
 		}
 
 		return this.nextFrame;
+	}
+
+	public void cleanUp() {
+		try {
+			this.channel.pipeline().remove("pledge_frame_outbound");
+			this.channel.pipeline().remove("pledge_frame_inbound");
+		} catch (NoSuchElementException ignored) {
+		}
 	}
 }
