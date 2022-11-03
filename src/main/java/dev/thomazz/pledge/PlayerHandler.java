@@ -55,6 +55,7 @@ public class PlayerHandler {
 		ChannelHandler outbound = PacketFrameHandlerFactory.buildOutbound(this, provider, policy);
 		ChannelHandler inbound =  PacketFrameHandlerFactory.buildInbound(this, provider);
 
+		// We want to be right after the encoder and decoder so there's no interference with other packet listeners
 		this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
 		this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
 	}

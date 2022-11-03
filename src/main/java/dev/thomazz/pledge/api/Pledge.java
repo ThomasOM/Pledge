@@ -28,8 +28,8 @@ public interface Pledge {
 	/**
 	 * Sets the range for the {@link PacketFrame} ids.
 	 *
-	 * @param start - Sets start for range
-	 * @param end   - Sets end for range
+	 * @param start - Starting id for range
+	 * @param end   - Ending id for range
 	 */
 	Pledge setRange(int start, int end);
 
@@ -37,25 +37,25 @@ public interface Pledge {
 	 * Sets the policy for the Pledge netty handler on how to create {@link PacketFrame}s
 	 * Note: Only change this setting if you know what you are doing!
 	 *
-	 * @param policy - Set policy
-	 * @return       -
+	 * @param policy - Write policy
 	 */
 	Pledge setPacketWritePolicy(PacketWritePolicy policy);
 
 	/**
 	 * Tracks packets for the current tick, creating a new {@link PacketFrame}.
+	 * If a frame is already created for the player on this current tick, it simply returns the already existing frame.
 	 *
 	 * @param player - Player to create frame for
-	 * @return       - Created frame
+	 * @return       - Created frame or current frame if one was already created this tick
 	 */
-	PacketFrame createFrame(Player player);
+	PacketFrame getOrCreateFrame(Player player);
 
 	/**
-	 * Gets the next {@link PacketFrame} the player will be sent.
-	 * Returns an empty result if no frame was created for the current tick using {@link #createFrame(Player)}
+	 * Gets the {@link PacketFrame} for the player in the current server tick.
+	 * Returns an empty result if no {@link PacketFrame} was created with {@link Pledge#getOrCreateFrame(Player)}.
 	 *
 	 * @param player - Player to get frame for
 	 * @return       - Next frame
 	 */
-	 Optional<PacketFrame> getNextFrame(Player player);
+	 Optional<PacketFrame> getFrame(Player player);
 }

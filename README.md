@@ -1,55 +1,42 @@
 # Pledge
-A high performance and lightweight Bukkit packet tracking API for predicting when a server packet arrives at a client using transactions.
-Mainly intended for use in Minecraft anticheats, or if you really want to track whether a player has received packets or not.
-Supporting 1.8 - 1.18
+A high performance and lightweight Bukkit packet tracking API for predicting when a server packet arrives at a client,
+using ping/pong and transaction packets.
+
 
 # How does it work
+Minecraft uses the TCP network protocol to transfer data between the server and the client.
+TCP guarantees delivery of data and also guarantees that packets will be delivered in the same order in which they were sent.
+The Minecraft client immediately responds to a server ping or transaction packet after synchronizing it with the game thread.
 
-Given below is a very simplified explanation how Pledge works and what it should be used for.
+Knowing this we can send a ping or transaction packet before and after some data we want to track.
+This guarantees the client has processed the data between the responses of these packets.
 
-As most of you who are here already know, Minecraft Java Edition uses the TCP protocol to send data between the client and the server.
-This protocol guarantees us packet order, even if data is dropped or duplicated.
-We can use this to our advantage by sending a transaction packet at the start and end of a tick.
-If we receive a response for these two packets from the client, we would logically know that every packet between these packets has also been received.
 
-Pledge simply sends a transaction packet when the tick starts and one when the tick ends to every player.
-Doing this, every packet that is sent in this tick can be tracked the same way as explained above.
+# Getting Started
+Setting up Pledge is extremely simple.
+You create a new API instance with ```Pledge#build``` and start it up by calling ```Pledge#start```
+This is usually done when starting up a plugin that is loaded on startup.
 
-# How to use
+Pledge works by sending ping or transaction packets to track data being received by a client.
+Tracking individual packets can be intensive and detrimental to bandwidth usage.
+Instead, Pledge offers a way to track all packets sent in a single server tick.
 
-Build a Pledge object using the ```Pledge#build``` method and use the builder pattern methods to configure it.
-After you're done, use the ```Pledge#start``` method to inject and start the transaction task.
-Most of your questions should be answered by reading the documentation in the API package.
+To track the packets for a player in the current server tick, you can use ```Pledge#getOrCreateFrame```
+This creates a ```PacketFrame``` or returns the existing frame if one was already created earlier for this player.
+A ```PacketFrame``` is a pair of ping or transaction packets wrapping the packets sent in the current server tick.
 
-```java
-public void onEnable() {
-    Pledge pledge = Pledge.build();
-    pledge.start(this);
-}
-```
+After a ```PacketFrame``` is created it gets sent to the client on the connection tick.
+Events in the ```api.event``` package broadcast when a frame is sent to the client and when a response is received from the client.
 
-A transaction event listener is included to listen to the built-in events.
-These events are called from the netty event loop, so they can be used along with your own packet listener.
-Please make sure that you set the 'events' setting to true, because it is not used by default.
-Simply implement the ```TransactionListener``` interface and create your own implementation.
-After that, you can register it using the ```Pledge#addListener``` method.
-For more detailed information, read the API documentation.
+More detailed descriptions of events and other API interfaces can be found in the documentation of the api package.
 
-Below is an example of using Pledge with a transaction listener, where ```MyTransactionListener``` is your implementation.
 
-```java
-public void onEnable() {
-    Pledge pledge = Pledge.build().events(true);
-    pledge.start(this);
-    
-    pledge.addListener(new MyTransactionListener());
-}
-```
+# Important notes
+Any of the ping / pong or transaction packets sent and received by Pledge will be invisible to the server itself.
+Internal Pledge channel handlers filter out these packets to prevent any interference with server or plugin behaviour.
 
-Another important detail is that the player channel is injected when joining the world, so only play packets are tracked.
-Because we need the player connection object to be set, we miss the server spawn packet and a few other packets sent when the player joins the server.
-This shouldn't matter for most use cases, but please be aware of this.
 
+# Dependency
 If you want to use this in your project, you can add it as a Maven dependency:
 
 ````xml
@@ -64,9 +51,7 @@ If you want to use this in your project, you can add it as a Maven dependency:
   <dependency>
     <groupId>dev.thomazz</groupId>
     <artifactId>pledge</artifactId>
-    <version>1.3</version>
+    <version>2.0</version>
   </dependency>
 </dependencies>
 ````
-
-You're free to copy, share and use this code however you want. Credits are appreciated.

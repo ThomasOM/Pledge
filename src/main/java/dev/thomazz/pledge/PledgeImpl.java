@@ -12,6 +12,7 @@ import java.util.Optional;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -36,21 +37,28 @@ public class PledgeImpl implements Pledge, Listener {
 		return Optional.ofNullable(this.playerHandlers.get(player));
 	}
 
+	private void validateLegacyBounds(int rangeId) {
+		if (rangeId < (int) Short.MIN_VALUE || rangeId > 0) {
+			throw new IllegalArgumentException("Invalid range for legacy packet version!"
+				+ "limits: " + Short.MIN_VALUE + " - " + -1);
+		}
+	}
+
 	@Override
 	public PledgeImpl start(JavaPlugin plugin) {
 		this.plugin = plugin;
-		this.plugin.getLogger().info("Starting up Pledge");
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
+		plugin.getLogger().info("Started up Pledge");
 		return this;
 	}
 
 	@Override
 	public PledgeImpl setRange(int start, int end) {
+		// Validate bounds for range in legacy versions
 		PacketVersion version = PacketVersion.getCurrentVersion();
-		if (version == PacketVersion.LEGACY
-			&& (start > (int) Short.MAX_VALUE || start < (int) Short.MIN_VALUE)) {
-			throw new IllegalArgumentException("Invalid range for legacy packet version!"
-				+ "limits: " + Short.MIN_VALUE + " - " + Short.MAX_VALUE);
+		if (version == PacketVersion.LEGACY) {
+			this.validateLegacyBounds(start);
+			this.validateLegacyBounds(end);
 		}
 
 		this.rangeStart = start;
@@ -65,17 +73,18 @@ public class PledgeImpl implements Pledge, Listener {
 	}
 
 	@Override
-	public PacketFrame createFrame(Player player) {
+	public PacketFrame getOrCreateFrame(Player player) {
 		return this.getHandler(player).map(PlayerHandler::createNextFrame)
 			.orElseThrow(() -> new IllegalArgumentException("No handler present for player!"));
 	}
 
 	@Override
-	public Optional<PacketFrame> getNextFrame(Player player) {
+	public Optional<PacketFrame> getFrame(Player player) {
 		return this.getHandler(player).flatMap(PlayerHandler::getNextFrame);
 	}
 
-	@EventHandler
+	// Highest priority to try to always register the handlers after other plugins did their job
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
 
@@ -83,7 +92,7 @@ public class PledgeImpl implements Pledge, Listener {
 			PlayerHandler handler = new PlayerHandler(player);
 			this.playerHandlers.put(player, handler);
 		} catch (Exception e) {
-			this.plugin.getLogger().info("Can not create Pledge player handler!");
+			this.plugin.getLogger().severe("Can not create Pledge player handler!");
 			e.printStackTrace();
 		}
 	}
