@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Main API access point for settings up Pledge
+ * Main API access point for Pledge
  */
 public interface Pledge {
 	/**

@@ -9,6 +9,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Called when an error is detected in the frame order.
  * For extra info see {@link ErrorType}
+ *
+ * Note: This event is called from the netty event loop
  */
 @Getter
 @RequiredArgsConstructor

@@ -9,6 +9,8 @@ import org.bukkit.event.HandlerList;
 
 /**
  * Called when a packet frame is sent to the player.
+ *
+ * Note: This event is called from the netty event loop
  */
 @Getter
 @RequiredArgsConstructor

@@ -35,6 +35,13 @@ More detailed descriptions of events and other API interfaces can be found in th
 Any of the ping / pong or transaction packets sent and received by Pledge will be invisible to the server itself.
 Internal Pledge channel handlers filter out these packets to prevent any interference with server or plugin behaviour.
 
+Pledge also optimizes networking by queueing all the packets in the pipeline channel handler before they are sent to the client.
+The queued packets are all written to the pipeline and flushed a single time on the connection tick,
+minimizing the amount of flush calls and improving overall performance.
+
+Most plugins, even when modifying the netty pipeline, should have no conflicts with Pledge.
+Feel free to open an issue if an incompatibility is found. 
+
 
 # Dependency
 If you want to use this in your project, you can add it as a Maven dependency:
