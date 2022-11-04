@@ -28,9 +28,8 @@ public class PlayerHandler {
 
 	@Getter
 	private final Player player;
-
-	private final Channel channel;
 	private final Channel original;
+	private final Channel channel;
 
 	private final int rangeStart;
 	private final int rangeEnd;
@@ -127,7 +126,10 @@ public class PlayerHandler {
 
 	public void cleanUp() {
 		try {
+			// Set back original channel instead of the delegate
 			MinecraftUtil.setChannel(this.player, this.original);
+
+			// Try to remove the channel handlers
 			this.channel.pipeline().remove("pledge_frame_outbound");
 			this.channel.pipeline().remove("pledge_frame_inbound");
 		} catch (NoSuchElementException ignored) {
