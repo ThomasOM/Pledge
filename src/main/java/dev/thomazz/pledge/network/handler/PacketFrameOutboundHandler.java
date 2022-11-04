@@ -3,7 +3,7 @@ package dev.thomazz.pledge.network.handler;
 import dev.thomazz.pledge.PlayerHandler;
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.PacketFlushEvent;
-import dev.thomazz.pledge.packet.SignalPacketProvider;
+import dev.thomazz.pledge.packet.PacketProvider;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -16,14 +16,21 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 @RequiredArgsConstructor
-public class PacketFrameWriteHandler extends ChannelOutboundHandlerAdapter {
+public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 	private final PlayerHandler playerHandler;
-	private final SignalPacketProvider signalProvider;
+	private final PacketProvider signalProvider;
 
 	private final Deque<Object> packetQueue = new ArrayDeque<>(32);
 
 	@Override
-	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+		// Forcibly write and flush disconnect and keep-alive packets
+		if (this.signalProvider.isDisconnect(msg) || this.signalProvider.isKeepAlive(msg)) {
+			super.write(ctx, msg, promise);
+			ctx.flush();
+			return;
+		}
+
 		this.packetQueue.add(msg);
 	}
 

@@ -40,14 +40,6 @@ public interface Pledge {
 	Pledge setRange(int start, int end);
 
 	/**
-	 * Sets the policy for the Pledge netty handler on how to create {@link PacketFrame}s
-	 * Note: Only change this setting if you know what you are doing!
-	 *
-	 * @param policy - Write policy
-	 */
-	Pledge setPacketWritePolicy(PacketWritePolicy policy);
-
-	/**
 	 * Tracks packets for the current tick, creating a new {@link PacketFrame}.
 	 * If a frame is already created for the player on this current tick, it simply returns the already existing frame.
 	 *

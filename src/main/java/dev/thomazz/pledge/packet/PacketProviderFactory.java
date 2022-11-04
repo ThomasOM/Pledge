@@ -1,11 +1,10 @@
 package dev.thomazz.pledge.packet;
 
-import dev.thomazz.pledge.util.PacketVersion;
 import dev.thomazz.pledge.packet.providers.PingPongPacketProvider;
 import dev.thomazz.pledge.packet.providers.TransactionPacketProvider;
 
-public final class SignalPacketProviderFactory {
-	public static SignalPacketProvider build() {
+public final class PacketProviderFactory {
+	public static PacketProvider build() {
 		try {
 			switch (PacketVersion.getCurrentVersion()) {
 				default:

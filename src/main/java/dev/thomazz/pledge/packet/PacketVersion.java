@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.util;
+package dev.thomazz.pledge.packet;
 
 import org.bukkit.Bukkit;
 

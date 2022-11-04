@@ -1,7 +1,6 @@
 package dev.thomazz.pledge.api.event;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -13,12 +12,17 @@ import java.util.Queue;
  * Allows you to modify the packets sent or to track certain packets right before flushing them.
  */
 @Getter
-@RequiredArgsConstructor
 public class PacketFlushEvent extends Event {
     private static final HandlerList handlers = new HandlerList();
 
     private final Player player;
     private final Queue<Object> packets;
+
+    public PacketFlushEvent(Player player, Queue<Object> packets) {
+        super(true);
+        this.player = player;
+        this.packets = packets;
+    }
 
     @Override
     public HandlerList getHandlers() {

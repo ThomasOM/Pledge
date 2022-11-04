@@ -1,11 +1,10 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
-import dev.thomazz.pledge.api.PacketWritePolicy;
 import dev.thomazz.pledge.api.Pledge;
-import dev.thomazz.pledge.packet.SignalPacketProvider;
-import dev.thomazz.pledge.packet.SignalPacketProviderFactory;
-import dev.thomazz.pledge.util.PacketVersion;
+import dev.thomazz.pledge.packet.PacketProvider;
+import dev.thomazz.pledge.packet.PacketProviderFactory;
+import dev.thomazz.pledge.packet.PacketVersion;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -25,10 +24,9 @@ public class PledgeImpl implements Pledge, Listener {
 	@Getter
 	private static PledgeImpl instance;
 
-	private final SignalPacketProvider signalPacketProvider = SignalPacketProviderFactory.build();
+	private final PacketProvider packetProvider = PacketProviderFactory.build();
 	private final Map<Player, PlayerHandler> playerHandlers = new HashMap<>();
 
-	private PacketWritePolicy packetWritePolicy = PacketWritePolicy.WRITE_FLUSH;
 	private JavaPlugin plugin;
 
 	// Default values, can modify through API
@@ -118,13 +116,6 @@ public class PledgeImpl implements Pledge, Listener {
 
 		this.rangeStart = start;
 		this.rangeEnd = end;
-		return this;
-	}
-
-	@Override
-	public Pledge setPacketWritePolicy(PacketWritePolicy policy) {
-		this.validateActive();
-		this.packetWritePolicy = policy;
 		return this;
 	}
 

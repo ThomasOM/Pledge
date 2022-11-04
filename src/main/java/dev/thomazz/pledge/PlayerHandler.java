@@ -1,22 +1,22 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
-import dev.thomazz.pledge.api.PacketWritePolicy;
 import dev.thomazz.pledge.api.event.ErrorType;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.api.event.ReceiveType;
 import dev.thomazz.pledge.api.event.PacketFrameErrorEvent;
 import dev.thomazz.pledge.api.event.PacketFrameReceiveEvent;
 import dev.thomazz.pledge.network.PacketFrameHandlerFactory;
-import dev.thomazz.pledge.packet.SignalPacketProvider;
+import dev.thomazz.pledge.network.delegation.DelegateChannelFactory;
+import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.util.MinecraftUtil;
-import io.netty.channel.Channel;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -28,7 +28,9 @@ public class PlayerHandler {
 
 	@Getter
 	private final Player player;
+
 	private final Channel channel;
+	private final Channel original;
 
 	private final int rangeStart;
 	private final int rangeEnd;
@@ -39,21 +41,22 @@ public class PlayerHandler {
 
 	public PlayerHandler(Player player) throws Exception {
 		this.player = player;
-		this.channel = MinecraftUtil.getChannelFromPlayer(player);
+
+		this.original = MinecraftUtil.getChannel(player);
+		this.channel = DelegateChannelFactory.buildDelegateChannel(this.original);
+		MinecraftUtil.setChannel(player, this.channel);
 
 		PledgeImpl pledge = PledgeImpl.getInstance();
 		this.id = this.rangeStart = pledge.getRangeStart();
 		this.rangeEnd = pledge.getRangeEnd();
 
 		this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
-		this.injectPacketFrameHandler(pledge);
+		this.injectPacketFrameHandlers(pledge);
 	}
 
-	private void injectPacketFrameHandler(PledgeImpl pledge) {
-		SignalPacketProvider provider = pledge.getSignalPacketProvider();
-		PacketWritePolicy policy = pledge.getPacketWritePolicy();
-
-		ChannelHandler outbound = PacketFrameHandlerFactory.buildOutbound(this, provider, policy);
+	private void injectPacketFrameHandlers(PledgeImpl pledge) {
+		PacketProvider provider = pledge.getPacketProvider();
+		ChannelHandler outbound = PacketFrameHandlerFactory.buildOutbound(this, provider);
 		ChannelHandler inbound =  PacketFrameHandlerFactory.buildInbound(this, provider);
 
 		// We want to be right after the encoder and decoder so there's no interference with other packet listeners
@@ -77,10 +80,10 @@ public class PlayerHandler {
 		Bukkit.getPluginManager().callEvent(event);
 	}
 
-	public void receiveId(int id) {
+	public boolean processId(int id) {
 		// Make sure the ID is within the range
 		if (id < Math.min(this.rangeStart, this.rangeEnd) || id > Math.max(this.rangeStart, this.rangeEnd)) {
-			return;
+			return false;
 		}
 
 		if (this.receivingFrame == null) {
@@ -99,6 +102,8 @@ public class PlayerHandler {
 				this.callEvent(new PacketFrameErrorEvent(this.player, ErrorType.INCOMPLETE_FRAME));
 			}
 		}
+
+		return true;
 	}
 
 	public void queueFrame() {
@@ -122,9 +127,12 @@ public class PlayerHandler {
 
 	public void cleanUp() {
 		try {
+			MinecraftUtil.setChannel(this.player, this.original);
 			this.channel.pipeline().remove("pledge_frame_outbound");
 			this.channel.pipeline().remove("pledge_frame_inbound");
 		} catch (NoSuchElementException ignored) {
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
 }
