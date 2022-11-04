@@ -7,15 +7,16 @@ using ping/pong and transaction packets.
 Minecraft uses the TCP network protocol to transfer data between the server and the client.
 TCP guarantees delivery of data and also guarantees that packets will be delivered in the same order in which they were sent.
 The Minecraft client immediately responds to a server ping or transaction packet after synchronizing it with the game thread.
+Note that this is different behaviour from keep-alive packets which are not synchronized with the game thread before being responded to.
 
 Knowing this we can send a ping or transaction packet before and after some data we want to track.
-This guarantees the client has processed the data between the responses of these packets.
+This guarantees the client has processed the data between the responses for these packets.
 
 
 # Getting Started
 Setting up Pledge is extremely simple.
-You create a new API instance with ```Pledge#build``` and start it up by calling ```Pledge#start```
-This is usually done when starting up a plugin that is loaded on startup.
+You create a new API instance with ```Pledge#build``` and start it up by calling ```Pledge#start```.
+This is usually done when a plugin is loaded on startup.
 
 Pledge works by sending ping or transaction packets to track data being received by a client.
 Tracking individual packets can be intensive and detrimental to bandwidth usage.
@@ -32,12 +33,18 @@ More detailed descriptions of events and other API interfaces can be found in th
 
 
 # Important notes
+Pledge only tracks packets when in play state.
+This is because ping or transaction packets are only available while in this state.
+
 Any of the ping / pong or transaction packets sent and received by Pledge will be invisible to the server itself.
 Internal Pledge channel handlers filter out these packets to prevent any interference with server or plugin behaviour.
 
-Pledge also optimizes networking by queueing all the packets in the pipeline channel handler before they are sent to the client.
-The queued packets are all written to the pipeline and flushed a single time on the connection tick,
-minimizing the amount of flush calls and improving overall performance.
+Pledge also changes networking by queueing all the packets in the pipeline channel handler before they are sent to the client.
+This is needed for Pledge to be able to wrap the packets in ping / pong or transaction packets.
+The queued packets are all written to the pipeline and flushed a single time on the connection tick.
+Doing this Pledge also minimizes the amount of flush calls and improving overall performance.
+
+Disconnect and keep-alive packets that require immediate flushing can not be tracked by Pledge
 
 Most plugins, even when modifying the netty pipeline, should have no conflicts with Pledge.
 Feel free to open an issue if an incompatibility is found. 
