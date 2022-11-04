@@ -31,6 +31,39 @@ Events in the ```api.event``` package broadcast when a frame is sent to the clie
 
 More detailed descriptions of events and other API interfaces can be found in the documentation of the api package.
 
+# Example
+Below is a simple Bukkit plugin to track when player velocity is received on the client.
+
+```java
+public class ExamplePlugin extends JavaPlugin implements Listener {
+    private final Map<PacketFrame, Vector> frameToVelocity = new ConcurrentHashMap<>();
+    private Pledge pledge;
+
+    @Override
+    public void onEnable() {
+        this.pledge = Pledge.build().start(this); // Start up pledge when enabling plugin
+    }
+
+    @EventHandler
+    public void onVelocity(PlayerVelocityEvent event) {
+        PacketFrame frame = this.pledge.getOrCreateFrame(event.getPlayer()); // Track packets for this tick
+        this.frameToVelocity.put(frame, event.getVelocity()); // Link frame to the velocity
+    }
+
+    @EventHandler
+    public void onReceive(PacketFrameReceiveEvent event) {
+        // Player received velocity on the client between receive start and end of the frame
+        switch (event.getType()) {
+            case RECEIVE_START:
+                Bukkit.broadcastMessage("Start receiving frame for velocity: " + this.frameToVelocity.get(event.getFrame()));
+                break;
+            case RECEIVE_END:
+                Bukkit.broadcastMessage("End receiving frame velocity: " + this.frameToVelocity.remove(event.getFrame()));
+        }
+    }
+}
+```
+
 
 # Important notes
 Pledge only tracks packets when in play state.
@@ -53,7 +86,7 @@ Feel free to open an issue if an incompatibility is found.
 # Dependency
 If you want to use this in your project, you can add it as a Maven dependency:
 
-````xml
+```xml
 <repositories>
   <repository>
     <id>pledge-repo</id>
@@ -68,4 +101,4 @@ If you want to use this in your project, you can add it as a Maven dependency:
     <version>2.0</version>
   </dependency>
 </dependencies>
-````
+```
