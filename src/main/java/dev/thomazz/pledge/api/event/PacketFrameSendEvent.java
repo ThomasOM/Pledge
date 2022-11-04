@@ -13,23 +13,23 @@ import org.bukkit.event.HandlerList;
  */
 @Getter
 public class PacketFrameSendEvent extends Event {
-	private static final HandlerList handlers = new HandlerList();
+    private static final HandlerList handlers = new HandlerList();
 
-	private final Player player;
-	private final PacketFrame current;
+    private final Player player;
+    private final PacketFrame current;
 
-	public PacketFrameSendEvent(Player player, PacketFrame current) {
-		super(true);
-		this.player = player;
-		this.current = current;
-	}
+    public PacketFrameSendEvent(Player player, PacketFrame current) {
+        super(true);
+        this.player = player;
+        this.current = current;
+    }
 
-	@Override
-	public HandlerList getHandlers() {
-		return PacketFrameSendEvent.handlers;
-	}
+    @Override
+    public HandlerList getHandlers() {
+        return PacketFrameSendEvent.handlers;
+    }
 
-	public static HandlerList getHandlerList() {
-		return PacketFrameSendEvent.handlers;
-	}
+    public static HandlerList getHandlerList() {
+        return PacketFrameSendEvent.handlers;
+    }
 }

@@ -9,6 +9,6 @@ import lombok.ToString;
 @Data
 @ToString
 public class PacketFrame {
-	private final int id1;
-	private final int id2;
+    private final int id1;
+    private final int id2;
 }

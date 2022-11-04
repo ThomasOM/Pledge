@@ -13,22 +13,22 @@ import org.bukkit.event.HandlerList;
  */
 @Getter
 public class PacketFrameErrorEvent extends Event {
-	private static final HandlerList handlers = new HandlerList();
-	private final Player player;
-	private final ErrorType type;
+    private static final HandlerList handlers = new HandlerList();
+    private final Player player;
+    private final ErrorType type;
 
-	public PacketFrameErrorEvent(Player player, ErrorType type) {
-		super(true);
-		this.player = player;
-		this.type = type;
-	}
+    public PacketFrameErrorEvent(Player player, ErrorType type) {
+        super(true);
+        this.player = player;
+        this.type = type;
+    }
 
-	@Override
-	public HandlerList getHandlers() {
-		return PacketFrameErrorEvent.handlers;
-	}
+    @Override
+    public HandlerList getHandlers() {
+        return PacketFrameErrorEvent.handlers;
+    }
 
-	public static HandlerList getHandlerList() {
-		return PacketFrameErrorEvent.handlers;
-	}
+    public static HandlerList getHandlerList() {
+        return PacketFrameErrorEvent.handlers;
+    }
 }

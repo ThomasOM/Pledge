@@ -14,25 +14,25 @@ import org.bukkit.event.HandlerList;
  */
 @Getter
 public class PacketFrameReceiveEvent extends Event {
-	private static final HandlerList handlers = new HandlerList();
+    private static final HandlerList handlers = new HandlerList();
 
-	private final Player player;
-	private final PacketFrame frame;
-	private final ReceiveType type;
+    private final Player player;
+    private final PacketFrame frame;
+    private final ReceiveType type;
 
-	public PacketFrameReceiveEvent(Player player, PacketFrame frame, ReceiveType type) {
-		super(true);
-		this.player = player;
-		this.frame = frame;
-		this.type = type;
-	}
+    public PacketFrameReceiveEvent(Player player, PacketFrame frame, ReceiveType type) {
+        super(true);
+        this.player = player;
+        this.frame = frame;
+        this.type = type;
+    }
 
-	@Override
-	public HandlerList getHandlers() {
-		return PacketFrameReceiveEvent.handlers;
-	}
+    @Override
+    public HandlerList getHandlers() {
+        return PacketFrameReceiveEvent.handlers;
+    }
 
-	public static HandlerList getHandlerList() {
-		return PacketFrameReceiveEvent.handlers;
-	}
+    public static HandlerList getHandlerList() {
+        return PacketFrameReceiveEvent.handlers;
+    }
 }
