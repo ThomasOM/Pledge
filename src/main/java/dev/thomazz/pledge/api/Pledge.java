@@ -2,6 +2,8 @@ package dev.thomazz.pledge.api;
 
 import dev.thomazz.pledge.PledgeImpl;
 import java.util.Optional;
+
+import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -38,6 +40,23 @@ public interface Pledge {
      * @param end   - Ending id for range
      */
     Pledge setRange(int start, int end);
+
+    /**
+     * Sets the amount of ticks for a {@link PacketFrameTimeoutEvent} to be called,
+     * after not receiving a response for a sent {@link PacketFrame}.
+     * Default value is 400 ticks (20 seconds)
+     *
+     * @param ticks - Amount of unresponsive ticks until calling the timeout event (<= 0 disables this feature)
+     */
+    Pledge setTimeoutTicks(int ticks);
+
+    /**
+     * Sets a fixed interval in ticks where frames will be created and sent automatically for players.
+     * Default value for this is 0, causing no frames to be created and sent automatically.
+     *
+     * @param interval - Interval to automatically create packet frames for (<= 0 disables this feature)
+     */
+    Pledge setFrameInterval(int interval);
 
     /**
      * Tracks packets for the current tick, creating a new {@link PacketFrame}.

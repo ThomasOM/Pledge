@@ -1,8 +1,8 @@
 package dev.thomazz.pledge.api.event;
 
+import dev.thomazz.pledge.api.PacketFrame;
 import lombok.Getter;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
@@ -12,14 +12,12 @@ import org.bukkit.event.HandlerList;
  * Note: This event is called from the netty event loop
  */
 @Getter
-public class PacketFrameErrorEvent extends Event {
+public class PacketFrameErrorEvent extends PacketFrameEvent {
     private static final HandlerList handlers = new HandlerList();
-    private final Player player;
     private final ErrorType type;
 
-    public PacketFrameErrorEvent(Player player, ErrorType type) {
-        super(true);
-        this.player = player;
+    public PacketFrameErrorEvent(Player player, PacketFrame frame, ErrorType type) {
+        super(player, frame, true);
         this.type = type;
     }
 

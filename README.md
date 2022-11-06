@@ -55,10 +55,10 @@ public class ExamplePlugin extends JavaPlugin implements Listener {
         // Player received velocity on the client between receive start and end of the frame
         switch (event.getType()) {
             case RECEIVE_START:
-                Bukkit.broadcastMessage("Start receiving frame for velocity: " + this.frameToVelocity.get(event.getFrame()));
+                Bukkit.broadcastMessage("Start receiving frame with velocity: " + this.frameToVelocity.get(event.getFrame()));
                 break;
             case RECEIVE_END:
-                Bukkit.broadcastMessage("End receiving frame velocity: " + this.frameToVelocity.remove(event.getFrame()));
+                Bukkit.broadcastMessage("End receiving frame with velocity: " + this.frameToVelocity.remove(event.getFrame()));
         }
     }
 }

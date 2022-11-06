@@ -18,6 +18,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 @Getter
 public class PledgeImpl implements Pledge, Listener {
@@ -28,6 +29,12 @@ public class PledgeImpl implements Pledge, Listener {
     private final Map<Player, PlayerHandler> playerHandlers = new HashMap<>();
 
     private JavaPlugin plugin;
+
+    private BukkitTask tickTask;
+    private int tick;
+
+    private int timeoutTicks = 400;
+    private int frameInterval = 0;
 
     // Default values, can modify through API
     private int rangeStart = -2000;
@@ -68,6 +75,17 @@ public class PledgeImpl implements Pledge, Listener {
         }
     }
 
+    private void tick() {
+        // Frame creation for all online players if a frame interval is set
+        if (this.frameInterval > 0 && this.tick % this.frameInterval == 0) {
+            this.playerHandlers.values().forEach(PlayerHandler::createNextFrame);
+        }
+
+        // Tick player handlers
+        this.playerHandlers.values().forEach(PlayerHandler::tick);
+        this.tick++;
+    }
+
     @Override
     public PledgeImpl start(JavaPlugin plugin) {
         this.validateActive();
@@ -77,6 +95,8 @@ public class PledgeImpl implements Pledge, Listener {
         }
 
         this.plugin = plugin;
+        this.tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 1L);
+
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         plugin.getLogger().info("Started up Pledge");
 
@@ -90,6 +110,11 @@ public class PledgeImpl implements Pledge, Listener {
     @Override
     public void destroy() {
         this.validateActive();
+
+        // End tick task if it was created
+        if (this.tickTask != null) {
+            this.tickTask.cancel();
+        }
 
         // Unregister listening for player join and quit
         HandlerList.unregisterAll(this);
@@ -116,6 +141,20 @@ public class PledgeImpl implements Pledge, Listener {
 
         this.rangeStart = start;
         this.rangeEnd = end;
+        return this;
+    }
+
+    @Override
+    public Pledge setTimeoutTicks(int ticks) {
+        this.validateActive();
+        this.timeoutTicks = ticks;
+        return this;
+    }
+
+    @Override
+    public Pledge setFrameInterval(int interval) {
+        this.validateActive();
+        this.frameInterval = interval;
         return this;
     }
 

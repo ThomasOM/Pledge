@@ -3,6 +3,7 @@ package dev.thomazz.pledge;
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.ErrorType;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
+import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
 import dev.thomazz.pledge.api.event.ReceiveType;
 import dev.thomazz.pledge.api.event.PacketFrameErrorEvent;
 import dev.thomazz.pledge.api.event.PacketFrameReceiveEvent;
@@ -37,6 +38,9 @@ public class PlayerHandler {
     private int id;
     private PacketFrame nextFrame;
     private PacketFrame receivingFrame;
+
+    private int waitingTicks;
+    private boolean timedOut;
 
     public PlayerHandler(Player player) throws Exception {
         this.player = player;
@@ -79,6 +83,27 @@ public class PlayerHandler {
         Bukkit.getPluginManager().callEvent(event);
     }
 
+    private void resetWaitTicks() {
+        this.waitingTicks = 0;
+        this.timedOut = false;
+    }
+
+    public void tick() {
+        // Only increment wait ticks when actually waiting for a frame, otherwise we can just reset wait ticks
+        PacketFrame waiting = this.frameQueue.peek();
+        if (waiting != null) {
+            PledgeImpl pledge = PledgeImpl.getInstance();
+
+            // Make sure that we don't spam call the event and wait for the next reset
+            if (++this.waitingTicks > pledge.getTimeoutTicks() && !this.timedOut) {
+                this.callEvent(new PacketFrameTimeoutEvent(this.player, waiting));
+                this.timedOut = true;
+            }
+        } else {
+            this.resetWaitTicks();
+        }
+    }
+
     public boolean processId(int id) {
         // Make sure the ID is within the range
         if (id < Math.min(this.rangeStart, this.rangeEnd) || id > Math.max(this.rangeStart, this.rangeEnd)) {
@@ -91,17 +116,19 @@ public class PlayerHandler {
                 this.receivingFrame = this.frameQueue.poll();
                 this.callEvent(new PacketFrameReceiveEvent(this.player, frame, ReceiveType.RECEIVE_START));
             } else {
-                this.callEvent(new PacketFrameErrorEvent(this.player, ErrorType.MISSING_FRAME));
+                this.callEvent(new PacketFrameErrorEvent(this.player, frame, ErrorType.MISSING_FRAME));
             }
         } else {
             if (this.receivingFrame.getId2() == id) {
                 this.callEvent(new PacketFrameReceiveEvent(this.player, this.receivingFrame, ReceiveType.RECEIVE_END));
                 this.receivingFrame = null;
             } else {
-                this.callEvent(new PacketFrameErrorEvent(this.player, ErrorType.INCOMPLETE_FRAME));
+                this.callEvent(new PacketFrameErrorEvent(this.player, this.receivingFrame, ErrorType.INCOMPLETE_FRAME));
             }
         }
 
+        // Reset waiting ticks because we received a correct response
+        this.resetWaitTicks();
         return true;
     }
 
