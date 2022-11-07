@@ -171,13 +171,20 @@ public class PledgeImpl implements Pledge, Listener {
         return this.getHandler(player).flatMap(PlayerHandler::getNextFrame);
     }
 
-    // Highest priority to try to always register the handlers after other plugins did their job
-    @EventHandler(priority = EventPriority.HIGHEST)
+    // Lowest priority to have data be available on join event
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         this.createHandler(event.getPlayer());
     }
 
-    @EventHandler
+    // Highest priority to always inject handlers after other plugins
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerJoinLate(PlayerJoinEvent event) {
+        this.getHandler(event.getPlayer()).ifPresent(handler -> handler.inject(this));
+    }
+
+    // If for some reason we want this to be available on the quit event
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         this.removeHandler(event.getPlayer());
     }

@@ -52,12 +52,10 @@ public class PlayerHandler {
         PledgeImpl pledge = PledgeImpl.getInstance();
         this.id = this.rangeStart = pledge.getRangeStart();
         this.rangeEnd = pledge.getRangeEnd();
-
         this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
-        this.injectPacketFrameHandlers(pledge);
     }
 
-    private void injectPacketFrameHandlers(PledgeImpl pledge) {
+    public void inject(PledgeImpl pledge) {
         PacketProvider provider = pledge.getPacketProvider();
         ChannelHandler outbound = PacketFrameHandlerFactory.buildOutbound(this, provider);
         ChannelHandler inbound =  PacketFrameHandlerFactory.buildInbound(this, provider);
