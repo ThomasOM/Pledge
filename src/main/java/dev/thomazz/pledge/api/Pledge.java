@@ -2,6 +2,7 @@ package dev.thomazz.pledge.api;
 
 import dev.thomazz.pledge.PledgeImpl;
 import java.util.Optional;
+import java.util.UUID;
 
 import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
 import org.bukkit.entity.Player;
@@ -68,6 +69,11 @@ public interface Pledge {
     PacketFrame getOrCreateFrame(Player player);
 
     /**
+     * Same as {@link #getOrCreateFrame(Player)}, but instead using the player uuid.
+     */
+    PacketFrame getOrCreateFrame(UUID playerId);
+
+    /**
      * Gets the {@link PacketFrame} for the player in the current server tick.
      * Returns an empty result if no {@link PacketFrame} was created with {@link Pledge#getOrCreateFrame(Player)}.
      *
@@ -75,4 +81,9 @@ public interface Pledge {
      * @return       - Next frame
      */
     Optional<PacketFrame> getFrame(Player player);
+
+    /**
+     * Same as {@link #getFrame(Player)}, but instead using the player uuid.
+     */
+    Optional<PacketFrame> getFrame(UUID playerId);
 }

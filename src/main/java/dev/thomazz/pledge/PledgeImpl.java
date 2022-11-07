@@ -8,6 +8,8 @@ import dev.thomazz.pledge.packet.PacketVersion;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -26,7 +28,7 @@ public class PledgeImpl implements Pledge, Listener {
     private static PledgeImpl instance;
 
     private final PacketProvider packetProvider = PacketProviderFactory.build();
-    private final Map<Player, PlayerHandler> playerHandlers = new HashMap<>();
+    private final Map<UUID, PlayerHandler> playerHandlers = new HashMap<>();
 
     private JavaPlugin plugin;
 
@@ -47,7 +49,7 @@ public class PledgeImpl implements Pledge, Listener {
     private void createHandler(Player player) {
         try {
             PlayerHandler handler = new PlayerHandler(player);
-            this.playerHandlers.put(player, handler);
+            this.playerHandlers.put(player.getUniqueId(), handler);
         } catch (Exception e) {
             this.plugin.getLogger().severe("Can not create Pledge player handler!");
             e.printStackTrace();
@@ -55,11 +57,15 @@ public class PledgeImpl implements Pledge, Listener {
     }
 
     private void removeHandler(Player player) {
-        this.playerHandlers.remove(player);
+        this.playerHandlers.remove(player.getUniqueId());
     }
 
     private Optional<PlayerHandler> getHandler(Player player) {
-        return Optional.ofNullable(this.playerHandlers.get(player));
+        return this.getHandler(player.getUniqueId());
+    }
+
+    private Optional<PlayerHandler> getHandler(UUID playerId) {
+        return Optional.ofNullable(this.playerHandlers.get(playerId));
     }
 
     private void validateActive() {
@@ -160,15 +166,25 @@ public class PledgeImpl implements Pledge, Listener {
 
     @Override
     public PacketFrame getOrCreateFrame(Player player) {
+        return this.getOrCreateFrame(player.getUniqueId());
+    }
+
+    @Override
+    public PacketFrame getOrCreateFrame(UUID playerId) {
         this.validateActive();
-        return this.getHandler(player).map(PlayerHandler::createNextFrame)
+        return this.getHandler(playerId).map(PlayerHandler::createNextFrame)
             .orElseThrow(() -> new IllegalArgumentException("No handler present for player!"));
     }
 
     @Override
     public Optional<PacketFrame> getFrame(Player player) {
+        return this.getFrame(player.getUniqueId());
+    }
+
+    @Override
+    public Optional<PacketFrame> getFrame(UUID playerId) {
         this.validateActive();
-        return this.getHandler(player).flatMap(PlayerHandler::getNextFrame);
+        return this.getHandler(playerId).flatMap(PlayerHandler::getNextFrame);
     }
 
     // Lowest priority to have data be available on join event
