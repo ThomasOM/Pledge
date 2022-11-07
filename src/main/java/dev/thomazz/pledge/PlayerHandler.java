@@ -52,7 +52,6 @@ public class PlayerHandler {
         PledgeImpl pledge = PledgeImpl.getInstance();
         this.id = this.rangeStart = pledge.getRangeStart();
         this.rangeEnd = pledge.getRangeEnd();
-        this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
     }
 
     public void inject(PledgeImpl pledge) {
