@@ -2,6 +2,7 @@ package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.ErrorType;
+import dev.thomazz.pledge.api.event.PacketFrameCreateEvent;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
 import dev.thomazz.pledge.api.event.ReceiveType;
@@ -143,6 +144,7 @@ public class PlayerHandler {
     public PacketFrame createNextFrame() {
         if (this.nextFrame == null) {
             this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
+            this.callEvent(new PacketFrameCreateEvent(this.player, this.nextFrame));
         }
 
         return this.nextFrame;
