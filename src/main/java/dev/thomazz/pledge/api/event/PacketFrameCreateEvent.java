@@ -2,6 +2,7 @@ package dev.thomazz.pledge.api.event;
 
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.Pledge;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 
@@ -15,7 +16,7 @@ public class PacketFrameCreateEvent extends PacketFrameEvent {
     private static final HandlerList handlers = new HandlerList();
 
     public PacketFrameCreateEvent(Player player, PacketFrame created) {
-        super(player, created, true);
+        super(player, created, !Bukkit.isPrimaryThread()); // Event can be either on or off main thread
     }
 
     @Override
