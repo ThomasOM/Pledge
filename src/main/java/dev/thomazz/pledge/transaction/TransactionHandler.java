@@ -13,6 +13,9 @@ import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.entity.Player;
 
 public class TransactionHandler implements HandlerInfo {
@@ -20,7 +23,7 @@ public class TransactionHandler implements HandlerInfo {
     private final Reference<Channel> channelReference;
     private final Reference<Object> connectionReference; // For quick access
 
-    private final IntObjectMap<TransactionPair> indexMapping = new IntObjectHashMap<>();
+    private final Map<Integer, TransactionPair> indexMapping = new HashMap<>();
 
     private final Direction direction;
     private final int min;
@@ -153,21 +156,15 @@ public class TransactionHandler implements HandlerInfo {
     }
 
     private void addIndex(int index, TransactionPair pair) {
-        index = this.convertIndex(index);
         synchronized (this.indexMapping) {
             this.indexMapping.put(index, pair);
         }
     }
 
     private TransactionPair fromIndex(int index) {
-        index = this.convertIndex(index);
         synchronized (this.indexMapping) {
             return this.indexMapping.get(index);
         }
-    }
-
-    private int convertIndex(int index) {
-        return Math.abs(index); // Right now we only support negative ids
     }
 
     private int updateIndex(int index) {
