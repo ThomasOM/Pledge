@@ -9,12 +9,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PacketFrameInboundHandler extends ChannelInboundHandlerAdapter {
     private final PlayerHandler playerHandler;
-    private final PacketProvider signalProvider;
+    private final PacketProvider packetProvider;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         // Pass received signaling packet ids to the player handler and filtering the packets out for the next handler
-        Integer id = this.signalProvider.idFromPacket(msg);
+        Integer id = this.packetProvider.idFromPacket(msg);
         if (id != null && this.playerHandler.processId(id)) {
             return;
         }

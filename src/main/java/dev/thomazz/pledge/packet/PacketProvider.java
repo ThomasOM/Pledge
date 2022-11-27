@@ -8,4 +8,8 @@ public interface PacketProvider {
     boolean isKeepAlive(Object packet);
 
     boolean isDisconnect(Object packet);
+
+    int getLowerBound();
+
+    int getUpperBound();
 }

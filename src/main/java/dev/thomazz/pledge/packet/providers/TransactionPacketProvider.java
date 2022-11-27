@@ -48,4 +48,14 @@ public class TransactionPacketProvider implements PacketProvider {
     public boolean isDisconnect(Object packet) {
         return this.disconnectClass.isInstance(packet);
     }
+
+    @Override
+    public int getLowerBound() {
+        return Short.MIN_VALUE;
+    }
+
+    @Override
+    public int getUpperBound() {
+        return -1;
+    }
 }

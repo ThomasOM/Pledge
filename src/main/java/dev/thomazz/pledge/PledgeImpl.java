@@ -4,7 +4,6 @@ import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.Pledge;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.packet.PacketProviderFactory;
-import dev.thomazz.pledge.packet.PacketVersion;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +50,7 @@ public class PledgeImpl implements Pledge, Listener {
             PlayerHandler handler = new PlayerHandler(player);
             this.playerHandlers.put(player.getUniqueId(), handler);
         } catch (Exception e) {
-            this.plugin.getLogger().severe("Can not create Pledge player handler!");
+            this.plugin.getLogger().severe("Could not create Pledge player handler!");
             e.printStackTrace();
         }
     }
@@ -74,10 +73,13 @@ public class PledgeImpl implements Pledge, Listener {
         }
     }
 
-    private void validateLegacyBounds(int rangeId) {
-        if (rangeId < (int) Short.MIN_VALUE || rangeId > 0) {
-            throw new IllegalArgumentException("Invalid range for legacy packet version!"
-                + "limits: " + Short.MIN_VALUE + " - " + -1);
+    private void validateBounds(int rangeId) {
+        int min = this.packetProvider.getLowerBound();
+        int max = this.packetProvider.getUpperBound();
+
+        if (rangeId < min || rangeId > max) {
+            throw new IllegalArgumentException("Invalid range for packet provider!"
+                + "limits: " + min + " - " + max);
         }
     }
 
@@ -137,13 +139,8 @@ public class PledgeImpl implements Pledge, Listener {
     @Override
     public PledgeImpl setRange(int start, int end) {
         this.validateActive();
-
-        // Validate bounds for range in legacy versions
-        PacketVersion version = PacketVersion.getCurrentVersion();
-        if (version == PacketVersion.LEGACY) {
-            this.validateLegacyBounds(start);
-            this.validateLegacyBounds(end);
-        }
+        this.validateBounds(start);
+        this.validateBounds(end);
 
         this.rangeStart = start;
         this.rangeEnd = end;

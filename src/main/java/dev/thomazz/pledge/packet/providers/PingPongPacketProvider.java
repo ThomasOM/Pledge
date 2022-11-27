@@ -48,4 +48,14 @@ public class PingPongPacketProvider implements PacketProvider {
     public boolean isDisconnect(Object packet) {
         return this.disconnectClass.isInstance(packet);
     }
+
+    @Override
+    public int getLowerBound() {
+        return Integer.MIN_VALUE;
+    }
+
+    @Override
+    public int getUpperBound() {
+        return Integer.MAX_VALUE;
+    }
 }

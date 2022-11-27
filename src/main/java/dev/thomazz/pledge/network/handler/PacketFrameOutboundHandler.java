@@ -18,14 +18,14 @@ import org.bukkit.entity.Player;
 @RequiredArgsConstructor
 public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 	private final PlayerHandler playerHandler;
-	private final PacketProvider signalProvider;
+	private final PacketProvider packetProvider;
 
 	private final Deque<Object> packetQueue = new ArrayDeque<>(32);
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
 		// Forcibly write and flush disconnect and keep-alive packets
-		if (this.signalProvider.isDisconnect(msg) || this.signalProvider.isKeepAlive(msg)) {
+		if (this.packetProvider.isDisconnect(msg) || this.packetProvider.isKeepAlive(msg)) {
 			super.write(ctx, msg, promise);
 			ctx.flush();
 			return;
@@ -60,8 +60,8 @@ public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 			int id1 = frame.getId1();
 			int id2 = frame.getId2();
 
-			Object packet1 = this.signalProvider.buildPacket(id1);
-			Object packet2 = this.signalProvider.buildPacket(id2);
+			Object packet1 = this.packetProvider.buildPacket(id1);
+			Object packet2 = this.packetProvider.buildPacket(id2);
 
 			this.packetQueue.addFirst(packet1);
 			this.packetQueue.addLast(packet2);
