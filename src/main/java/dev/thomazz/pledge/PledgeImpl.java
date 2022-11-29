@@ -85,8 +85,10 @@ public class PledgeImpl implements Pledge, Listener {
 
     private void tick() {
         // Frame creation for all online players if a frame interval is set
-        if (this.frameInterval > 0 && this.tick % this.frameInterval == 0) {
-            this.playerHandlers.values().forEach(PlayerHandler::createNextFrame);
+        if (this.frameInterval > 0) {
+            this.playerHandlers.values().stream()
+                .filter(handler -> handler.getCreationTicks() >= this.frameInterval)
+                .forEach(PlayerHandler::createNextFrame);
         }
 
         // Tick player handlers

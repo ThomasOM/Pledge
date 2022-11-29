@@ -52,7 +52,7 @@ public interface Pledge {
     Pledge setTimeoutTicks(int ticks);
 
     /**
-     * Sets a fixed interval in ticks where frames will be created and sent automatically for players.
+     * Setting to send frames automatically after a certain amount of ticks have passed without any frames created.
      * Default value for this is 0, causing no frames to be created and sent automatically.
      *
      * @param interval - Interval to automatically create packet frames for (<= 0 disables this feature)

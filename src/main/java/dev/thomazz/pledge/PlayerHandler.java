@@ -40,6 +40,8 @@ public class PlayerHandler {
     private PacketFrame nextFrame;
     private PacketFrame receivingFrame;
 
+    @Getter
+    private int creationTicks;
     private int waitingTicks;
     private boolean timedOut;
 
@@ -100,6 +102,9 @@ public class PlayerHandler {
         } else {
             this.resetWaitTicks();
         }
+
+        // Increment ticks since last frame was created
+        this.creationTicks++;
     }
 
     public boolean processId(int id) {
@@ -146,6 +151,9 @@ public class PlayerHandler {
             this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
             this.callEvent(new PacketFrameCreateEvent(this.player, this.nextFrame));
         }
+
+        // Reset creation ticks
+        this.creationTicks = 0;
 
         return this.nextFrame;
     }
