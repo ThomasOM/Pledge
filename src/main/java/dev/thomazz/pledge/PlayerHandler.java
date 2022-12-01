@@ -17,6 +17,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -63,8 +64,10 @@ public class PlayerHandler {
         ChannelHandler inbound =  PacketFrameHandlerFactory.buildInbound(this, provider);
 
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
-        this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
-        this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
+        this.channel.eventLoop().execute(() -> {
+            this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
+            this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
+        });
     }
 
     private int getAndUpdateId() {
