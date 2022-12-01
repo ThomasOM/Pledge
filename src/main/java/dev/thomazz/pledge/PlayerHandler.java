@@ -17,7 +17,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
