@@ -28,7 +28,7 @@ public class PacketFrameOutboundQueueHandler extends ChannelOutboundHandlerAdapt
                 break;
             case PASS:
                 super.write(ctx, msg, promise);
-                this.flush(ctx);
+                super.flush(ctx);
                 break;
         }
     }
