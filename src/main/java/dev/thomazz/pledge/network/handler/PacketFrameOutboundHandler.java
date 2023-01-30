@@ -48,7 +48,9 @@ public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 			Object packet1 = this.packetProvider.buildPacket(id1);
 			Object packet2 = this.packetProvider.buildPacket(id2);
 
+			this.queueHandler.setState(PacketQueueState.QUEUE_FIRST);
 			ctx.write(packet1);
+			this.queueHandler.setState(PacketQueueState.QUEUE_LAST);
 			ctx.write(packet2);
 
 			this.playerHandler.queueFrame();

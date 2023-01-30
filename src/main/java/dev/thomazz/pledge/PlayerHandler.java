@@ -69,7 +69,7 @@ public class PlayerHandler {
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
         this.channel.eventLoop().execute(() -> {
             this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
-            this.channel.pipeline().addBefore("encoder", "pledge_frame_outbound_queue", queueHandler);
+            this.channel.pipeline().addAfter("prepender", "pledge_frame_outbound_queue", queueHandler);
             this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
         });
     }
