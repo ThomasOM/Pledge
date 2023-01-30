@@ -7,8 +7,7 @@ import dev.thomazz.pledge.packet.PacketProvider;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import java.util.ArrayDeque;
-import java.util.Deque;
+
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
@@ -19,41 +18,27 @@ import org.bukkit.entity.Player;
 public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 	private final PlayerHandler playerHandler;
 	private final PacketProvider packetProvider;
-
-	private final Deque<Object> packetQueue = new ArrayDeque<>(32);
+	private final PacketFrameOutboundQueueHandler queueHandler;
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-		// Forcibly write and flush disconnect and keep-alive packets
+		// Communicate to queue handler that some packets are allowed to pass
 		if (this.packetProvider.isDisconnect(msg) || this.packetProvider.isKeepAlive(msg)) {
-			super.write(ctx, msg, promise);
-			ctx.flush();
-			return;
+			this.queueHandler.setState(PacketQueueState.PASS);
+		} else {
+			this.queueHandler.setState(PacketQueueState.QUEUE_LAST);
 		}
 
-		this.packetQueue.add(msg);
+		super.write(ctx, msg, promise);
 	}
 
 	@Override
 	public void flush(ChannelHandlerContext ctx) throws Exception {
-		// Call flush event right before flushing to allow for some final changes
+		// Call flush event right before flushing to allow for some final changes to the queue
 		Player player = this.playerHandler.getPlayer();
-		Bukkit.getPluginManager().callEvent(new PacketFlushEvent(player, this.packetQueue));
+		Bukkit.getPluginManager().callEvent(new PacketFlushEvent(player, this.queueHandler.getMessageQueue()));
 
-		// Try to wrap the packet queue in signaling packets if desired
-		this.wrapPacketQueue();
-
-		// Drain packet queue writing into handler context
-		while (!this.packetQueue.isEmpty()) {
-			ctx.write(this.packetQueue.poll());
-		}
-
-		// Finally flush all packets at once
-		ctx.flush();
-	}
-
-	// Wraps packet queue in two signaling packets, creating a new packet frame
-	protected void wrapPacketQueue() throws Exception {
+		// Try to wrap the queue in signaling packets if desired
 		Optional<PacketFrame> next = this.playerHandler.getNextFrame();
 		if (next.isPresent()) {
 			PacketFrame frame = next.get();
@@ -63,10 +48,13 @@ public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 			Object packet1 = this.packetProvider.buildPacket(id1);
 			Object packet2 = this.packetProvider.buildPacket(id2);
 
-			this.packetQueue.addFirst(packet1);
-			this.packetQueue.addLast(packet2);
+			ctx.write(packet1);
+			ctx.write(packet2);
 
 			this.playerHandler.queueFrame();
 		}
+
+		// Finally flush all packets at once
+		super.flush(ctx);
 	}
 }

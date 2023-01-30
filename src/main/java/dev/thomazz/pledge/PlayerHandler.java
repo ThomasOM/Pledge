@@ -8,8 +8,10 @@ import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
 import dev.thomazz.pledge.api.event.ReceiveType;
 import dev.thomazz.pledge.api.event.PacketFrameErrorEvent;
 import dev.thomazz.pledge.api.event.PacketFrameReceiveEvent;
-import dev.thomazz.pledge.network.PacketFrameHandlerFactory;
 import dev.thomazz.pledge.network.delegation.DelegateChannelFactory;
+import dev.thomazz.pledge.network.handler.PacketFrameInboundHandler;
+import dev.thomazz.pledge.network.handler.PacketFrameOutboundHandler;
+import dev.thomazz.pledge.network.handler.PacketFrameOutboundQueueHandler;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.util.MinecraftUtil;
 
@@ -19,7 +21,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -59,12 +60,16 @@ public class PlayerHandler {
 
     public void inject(PledgeImpl pledge) {
         PacketProvider provider = pledge.getPacketProvider();
-        ChannelHandler outbound = PacketFrameHandlerFactory.buildOutbound(this, provider);
-        ChannelHandler inbound =  PacketFrameHandlerFactory.buildInbound(this, provider);
+
+        // Create new channel handlers
+        PacketFrameOutboundQueueHandler queueHandler = new PacketFrameOutboundQueueHandler();
+        PacketFrameOutboundHandler outbound = new PacketFrameOutboundHandler(this, provider, queueHandler);
+        PacketFrameInboundHandler inbound = new PacketFrameInboundHandler(this, provider);
 
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
         this.channel.eventLoop().execute(() -> {
             this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
+            this.channel.pipeline().addBefore("encoder", "pledge_frame_outbound_queue", queueHandler);
             this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
         });
     }
