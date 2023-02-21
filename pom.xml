@@ -6,7 +6,7 @@
 
     <groupId>dev.thomazz</groupId>
     <artifactId>pledge</artifactId>
-    <version>2.1</version>
+    <version>2.2</version>
     <name>Pledge</name>
     <packaging>jar</packaging>
 

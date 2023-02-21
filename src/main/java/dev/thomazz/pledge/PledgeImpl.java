@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import dev.thomazz.pledge.util.TickEndTask;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -32,6 +33,7 @@ public class PledgeImpl implements Pledge, Listener {
     private JavaPlugin plugin;
 
     private BukkitTask tickTask;
+    private TickEndTask tickEndTask;
     private int tick;
 
     private int timeoutTicks = 400;
@@ -83,7 +85,7 @@ public class PledgeImpl implements Pledge, Listener {
         }
     }
 
-    private void tick() {
+    private void tickStart() {
         // Frame creation for all online players if a frame interval is set
         if (this.frameInterval > 0) {
             this.playerHandlers.values().stream()
@@ -92,8 +94,12 @@ public class PledgeImpl implements Pledge, Listener {
         }
 
         // Tick player handlers
-        this.playerHandlers.values().forEach(PlayerHandler::tick);
+        this.playerHandlers.values().forEach(PlayerHandler::tickStart);
         this.tick++;
+    }
+
+    private void tickEnd() {
+        this.playerHandlers.values().forEach(PlayerHandler::tickEnd);
     }
 
     @Override
@@ -105,7 +111,8 @@ public class PledgeImpl implements Pledge, Listener {
         }
 
         this.plugin = plugin;
-        this.tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 1L);
+        this.tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tickStart, 0L, 1L);
+        this.tickEndTask = new TickEndTask(this::tickEnd).start();
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         plugin.getLogger().info("Started up Pledge");
@@ -122,9 +129,8 @@ public class PledgeImpl implements Pledge, Listener {
         this.validateActive();
 
         // End tick task if it was created
-        if (this.tickTask != null) {
-            this.tickTask.cancel();
-        }
+        this.tickTask.cancel();
+        this.tickEndTask.cancel();
 
         // Unregister listening for player join and quit
         HandlerList.unregisterAll(this);

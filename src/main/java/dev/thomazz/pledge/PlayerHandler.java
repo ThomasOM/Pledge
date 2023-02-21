@@ -95,7 +95,7 @@ public class PlayerHandler {
         this.timedOut = false;
     }
 
-    public void tick() {
+    public void tickStart() {
         // Only increment wait ticks when actually waiting for a frame, otherwise we can just reset wait ticks
         PacketFrame waiting = this.frameQueue.peek();
         if (waiting != null) {
@@ -112,6 +112,11 @@ public class PlayerHandler {
 
         // Increment ticks since last frame was created
         this.creationTicks++;
+    }
+
+    public void tickEnd() {
+        // Flush original channel at the end of the tick since the delegate does not flush
+        this.original.flush();
     }
 
     public boolean processId(int id) {
@@ -174,8 +179,8 @@ public class PlayerHandler {
             this.channel.pipeline().remove("pledge_frame_outbound");
             this.channel.pipeline().remove("pledge_frame_inbound");
         } catch (NoSuchElementException ignored) {
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
     }
 }
