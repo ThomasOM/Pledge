@@ -1,5 +1,6 @@
 package dev.thomazz.pledge.network.delegation;
 
+import dev.thomazz.pledge.util.ReflectionUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import lombok.RequiredArgsConstructor;
@@ -9,9 +10,9 @@ import java.lang.reflect.Method;
 
 @RequiredArgsConstructor
 public class WriteFlushInvocationHandler implements InvocationHandler {
-    private static final Method writeAndFlush = WriteFlushInvocationHandler.channelMethod("writeAndFlush", Object.class);
-    private static final Method writeAndFlushAlt = WriteFlushInvocationHandler.channelMethod("writeAndFlush", Object.class, ChannelPromise.class);
-    private static final Method flush = WriteFlushInvocationHandler.channelMethod("flush");
+    private static final Method writeAndFlush = ReflectionUtil.searchInterfaceMethod(Channel.class, "writeAndFlush", Object.class);
+    private static final Method writeAndFlushAlt = ReflectionUtil.searchInterfaceMethod(Channel.class, "writeAndFlush", Object.class, ChannelPromise.class);
+    private static final Method flush = ReflectionUtil.searchInterfaceMethod(Channel.class, "flush");
 
     private final Channel original;
 
@@ -29,13 +30,5 @@ public class WriteFlushInvocationHandler implements InvocationHandler {
         }
 
         return null;
-    }
-
-    private static Method channelMethod(String name, Class<?>... args) {
-        try {
-            return Channel.class.getDeclaredMethod(name, args);
-        } catch (Exception ex) {
-            throw new RuntimeException("Could not get channel method: " + name, ex);
-        }
     }
 }

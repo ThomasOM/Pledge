@@ -3,7 +3,6 @@ package dev.thomazz.pledge;
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.ErrorType;
 import dev.thomazz.pledge.api.event.PacketFrameCreateEvent;
-import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
 import dev.thomazz.pledge.api.event.ReceiveType;
 import dev.thomazz.pledge.api.event.PacketFrameErrorEvent;
@@ -37,6 +36,8 @@ public class PlayerHandler {
     private final int rangeStart;
     private final int rangeEnd;
 
+    private PacketFrameOutboundHandler netHandler;
+
     private int id;
     private PacketFrame nextFrame;
     private PacketFrame receivingFrame;
@@ -62,15 +63,15 @@ public class PlayerHandler {
         PacketProvider provider = pledge.getPacketProvider();
 
         // Create new channel handlers
-        PacketFrameOutboundQueueHandler queueHandler = new PacketFrameOutboundQueueHandler();
-        PacketFrameOutboundHandler outbound = new PacketFrameOutboundHandler(this, provider, queueHandler);
         PacketFrameInboundHandler inbound = new PacketFrameInboundHandler(this, provider);
+        PacketFrameOutboundQueueHandler queueHandler = new PacketFrameOutboundQueueHandler();
+        this.netHandler = new PacketFrameOutboundHandler(this, provider, queueHandler);
 
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
         this.channel.eventLoop().execute(() -> {
             this.channel.pipeline().addAfter("decoder", "pledge_frame_inbound", inbound);
             this.channel.pipeline().addAfter("prepender", "pledge_frame_outbound_queue", queueHandler);
-            this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", outbound);
+            this.channel.pipeline().addAfter("encoder", "pledge_frame_outbound", this.netHandler);
         });
     }
 
@@ -115,10 +116,18 @@ public class PlayerHandler {
     }
 
     public void tickEnd() {
+        // Make sure to offer the next frame to the handler and the awaiting frame queue
+        if (this.nextFrame != null) {
+            this.frameQueue.offer(this.nextFrame);
+            this.netHandler.flushFrame(this.nextFrame);
+            this.nextFrame = null;
+        }
+
         // Flush original channel at the end of the tick since the delegate does not flush
         this.original.flush();
     }
 
+    // Processes incoming ids from netty thread
     public boolean processId(int id) {
         // Make sure the ID is within the range
         if (id < Math.min(this.rangeStart, this.rangeEnd) || id > Math.max(this.rangeStart, this.rangeEnd)) {
@@ -145,12 +154,6 @@ public class PlayerHandler {
         // Reset waiting ticks because we received a correct response
         this.resetWaitTicks();
         return true;
-    }
-
-    public void queueFrame() {
-        this.frameQueue.offer(this.nextFrame);
-        Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(this.player, this.nextFrame));
-        this.nextFrame = null;
     }
 
     public Optional<PacketFrame> getNextFrame() {

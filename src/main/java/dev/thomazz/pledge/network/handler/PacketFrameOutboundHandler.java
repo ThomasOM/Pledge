@@ -3,12 +3,15 @@ package dev.thomazz.pledge.network.handler;
 import dev.thomazz.pledge.PlayerHandler;
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.PacketFlushEvent;
+import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.packet.PacketProvider;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
@@ -16,6 +19,8 @@ import org.bukkit.entity.Player;
 
 @RequiredArgsConstructor
 public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
+	private final Queue<PacketFrame> flushFrames = new ConcurrentLinkedQueue<>();
+
 	private final PlayerHandler playerHandler;
 	private final PacketProvider packetProvider;
 	private final PacketFrameOutboundQueueHandler queueHandler;
@@ -39,9 +44,8 @@ public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 		Bukkit.getPluginManager().callEvent(new PacketFlushEvent(player, this.queueHandler.getMessageQueue()));
 
 		// Try to wrap the queue in signaling packets if desired
-		Optional<PacketFrame> next = this.playerHandler.getNextFrame();
-		if (next.isPresent()) {
-			PacketFrame frame = next.get();
+		PacketFrame frame = this.flushFrames.poll();
+		if (frame != null) {
 			int id1 = frame.getId1();
 			int id2 = frame.getId2();
 
@@ -53,10 +57,14 @@ public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 			this.queueHandler.setState(PacketQueueState.QUEUE_LAST);
 			ctx.write(packet2);
 
-			this.playerHandler.queueFrame();
+			Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(player, frame));
 		}
 
 		// Finally flush all packets at once
 		super.flush(ctx);
+	}
+
+	public void flushFrame(PacketFrame frame) {
+		this.flushFrames.add(frame);
 	}
 }
