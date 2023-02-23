@@ -12,6 +12,8 @@ import java.util.Deque;
 @Getter
 @Setter
 public class PacketFrameOutboundQueueHandler extends ChannelOutboundHandlerAdapter {
+    public static final String HANDLER_NAME = "pledge_frame_outbound_queue";
+
     private final Deque<Object> messageQueue = new ArrayDeque<>();
 
     // State used to determine what to do with arriving messages

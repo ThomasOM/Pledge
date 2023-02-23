@@ -1,6 +1,5 @@
 package dev.thomazz.pledge.util;
 
-
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;

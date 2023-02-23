@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class PacketFrameInboundHandler extends ChannelInboundHandlerAdapter {
+    public static final String HANDLER_NAME = "pledge_frame_inbound";
+
     private final PlayerHandler playerHandler;
     private final PacketProvider packetProvider;
 

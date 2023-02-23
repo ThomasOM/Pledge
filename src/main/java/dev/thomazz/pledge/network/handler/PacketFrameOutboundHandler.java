@@ -5,11 +5,11 @@ import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.PacketFlushEvent;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.packet.PacketProvider;
+import dev.thomazz.pledge.util.ChannelHelper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -19,6 +19,8 @@ import org.bukkit.entity.Player;
 
 @RequiredArgsConstructor
 public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
+	public static final String HANDLER_NAME = "pledge_frame_outbound";
+
 	private final Queue<PacketFrame> flushFrames = new ConcurrentLinkedQueue<>();
 
 	private final PlayerHandler playerHandler;
@@ -52,10 +54,13 @@ public class PacketFrameOutboundHandler extends ChannelOutboundHandlerAdapter {
 			Object packet1 = this.packetProvider.buildPacket(id1);
 			Object packet2 = this.packetProvider.buildPacket(id2);
 
+			// Use queue context as target
+			ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundQueueHandler.HANDLER_NAME);
+
 			this.queueHandler.setState(PacketQueueState.QUEUE_FIRST);
-			ctx.write(packet1);
+			target.write(ChannelHelper.encodeAndCompress(ctx, packet1));
 			this.queueHandler.setState(PacketQueueState.QUEUE_LAST);
-			ctx.write(packet2);
+			target.write(ChannelHelper.encodeAndCompress(ctx, packet2));
 
 			Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(player, frame));
 		}
