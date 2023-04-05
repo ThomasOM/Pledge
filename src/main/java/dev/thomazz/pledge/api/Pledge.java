@@ -88,7 +88,7 @@ public interface Pledge {
     Optional<PacketFrame> getFrame(UUID playerId);
 
     /**
-     * @return - If the current server version supports bundles.
+     * @return - If the current server version supports packet bundles.
      */
     boolean supportsBundles();
 }

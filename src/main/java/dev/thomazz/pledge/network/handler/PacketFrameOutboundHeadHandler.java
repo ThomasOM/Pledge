@@ -70,7 +70,7 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 			// Packet bundle support
 			if (this.pledge.supportsBundles()) {
 				List<Object> packets = new ArrayList<>(this.messageQueue);
-				Object bundle = this.pledge.getPacketBundleManager().createBundle(packets);
+				Object bundle = this.pledge.getPacketBundleBuilder().buildBundle(packets);
 				target.write(ChannelHelper.encodeAndCompress(ctx, bundle));
 			} else {
 				Object packet;
