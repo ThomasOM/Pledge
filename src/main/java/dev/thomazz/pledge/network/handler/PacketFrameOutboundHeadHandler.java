@@ -5,6 +5,7 @@ import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.PacketFlushEvent;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
+import dev.thomazz.pledge.packet.PacketBundleBuilder;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.util.ChannelHelper;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,7 +25,7 @@ import org.bukkit.entity.Player;
 
 @RequiredArgsConstructor
 public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapter {
-	public static final String HANDLER_NAME = "pledge_frame_outbound";
+	public static final String HANDLER_NAME = "pledge_frame_outbound_head";
 
 	private final Queue<PacketFrame> flushFrames = new ConcurrentLinkedQueue<>();
 	private final Deque<Object> messageQueue = new ArrayDeque<>();
@@ -39,11 +40,13 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 		// Communicate to queue handler that some packets should be discarded or not since we queue them here
 		if (this.packetProvider.isDisconnect(msg) || this.packetProvider.isKeepAlive(msg)) {
 			this.tailHandler.setDiscard(false);
+			super.write(ctx, msg, promise);
+			super.flush(ctx);
 		} else {
+			this.messageQueue.add(msg);
 			this.tailHandler.setDiscard(true);
+			super.write(ctx, msg, promise);
 		}
-
-		super.write(ctx, msg, promise);
 	}
 
 	@Override
@@ -64,29 +67,31 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 			this.messageQueue.addFirst(packet1);
 			this.messageQueue.addLast(packet2);
 
-			this.tailHandler.setDiscard(false);
-
-			// Use queue context as target
-			ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
-
 			// Packet bundle support
-			if (this.pledge.supportsBundles()) {
-				List<Object> packets = new ArrayList<>(this.messageQueue);
-				Object bundle = this.pledge.getPacketBundleBuilder().buildBundle(packets);
-				target.write(ChannelHelper.encodeAndCompress(ctx, bundle));
-			} else {
-				Object packet;
-				while ((packet = this.messageQueue.poll()) != null) {
-					target.write(ChannelHelper.encodeAndCompress(ctx, packet));
-				}
+			PacketBundleBuilder bundleBuilder = this.pledge.getPacketBundleBuilder();
+			if (bundleBuilder.isSupported()) {
+				this.messageQueue.addFirst(bundleBuilder.buildDelimiter());
+				this.messageQueue.addLast(bundleBuilder.buildDelimiter());
 			}
 
-			this.tailHandler.setDiscard(true);
+			// Call frame send event
 			Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(player, frame));
 		}
 
-		// Finally flush all packets at once
-		super.flush(ctx);
+		// Drain all queued packets to target and flush
+		this.tailHandler.setDiscard(false);
+		try {
+			ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
+
+			Object packet;
+			while ((packet = this.messageQueue.poll()) != null) {
+				target.write(ChannelHelper.encodeAndCompress(ctx, packet));
+			}
+
+			super.flush(ctx);
+		} finally {
+			this.tailHandler.setDiscard(true);
+		}
 	}
 
 	public void flushFrame(PacketFrame frame) {

@@ -9,14 +9,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapter {
-    public static final String HANDLER_NAME = "pledge_frame_outbound_queue";
+    public static final String HANDLER_NAME = "pledge_frame_outbound_tail";
     private boolean discard = false;
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (!this.discard) {
             super.write(ctx, msg, promise);
-            super.flush(ctx);
         }
     }
 }

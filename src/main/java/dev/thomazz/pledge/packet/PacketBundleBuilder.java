@@ -1,5 +1,4 @@
 package dev.thomazz.pledge.packet;
-import dev.thomazz.pledge.util.MinecraftUtil;
 
 import java.lang.reflect.Constructor;
 
@@ -10,8 +9,9 @@ public class PacketBundleBuilder {
         Constructor<?> constructor;
 
         try {
-            Class<?> clazz = MinecraftUtil.gamePacket("ClientboundBundlePacket");
-            constructor = clazz.getConstructor(Iterable.class);
+            Class<?> clazz = Class.forName("net.minecraft.network.protocol.BundleDelimiterPacket");
+            constructor = clazz.getDeclaredConstructor();
+            constructor.setAccessible(true);
         } catch (Exception ex) {
             constructor = null;
         }
@@ -19,8 +19,8 @@ public class PacketBundleBuilder {
         this.bundleConstructor = constructor;
     }
 
-    public Object buildBundle(Iterable<?> packets) throws Exception {
-        return this.bundleConstructor.newInstance(packets);
+    public Object buildDelimiter() throws Exception {
+        return this.bundleConstructor.newInstance();
     }
 
     public boolean isSupported() {
