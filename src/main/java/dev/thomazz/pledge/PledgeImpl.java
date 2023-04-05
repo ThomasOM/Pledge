@@ -2,6 +2,7 @@ package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.Pledge;
+import dev.thomazz.pledge.packet.PacketBundleManager;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.packet.PacketProviderFactory;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ public class PledgeImpl implements Pledge, Listener {
     @Getter
     private static PledgeImpl instance;
 
+    private final PacketBundleManager packetBundleManager = new PacketBundleManager();
     private final PacketProvider packetProvider = PacketProviderFactory.build();
     private final Map<UUID, PlayerHandler> playerHandlers = new HashMap<>();
 
@@ -190,6 +192,11 @@ public class PledgeImpl implements Pledge, Listener {
     public Optional<PacketFrame> getFrame(UUID playerId) {
         this.validateActive();
         return this.getHandler(playerId).flatMap(PlayerHandler::getNextFrame);
+    }
+
+    @Override
+    public boolean supportsBundles() {
+        return this.packetBundleManager.isSupported();
     }
 
     // Lowest priority to have data be available on join event

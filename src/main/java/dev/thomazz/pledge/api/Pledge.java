@@ -86,4 +86,9 @@ public interface Pledge {
      * Same as {@link #getFrame(Player)}, but instead using the player uuid.
      */
     Optional<PacketFrame> getFrame(UUID playerId);
+
+    /**
+     * @return - If the current server version supports bundles.
+     */
+    boolean supportsBundles();
 }

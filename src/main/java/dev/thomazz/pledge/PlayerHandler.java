@@ -9,8 +9,8 @@ import dev.thomazz.pledge.api.event.PacketFrameErrorEvent;
 import dev.thomazz.pledge.api.event.PacketFrameReceiveEvent;
 import dev.thomazz.pledge.network.delegation.DelegateChannelFactory;
 import dev.thomazz.pledge.network.handler.PacketFrameInboundHandler;
-import dev.thomazz.pledge.network.handler.PacketFrameOutboundHandler;
-import dev.thomazz.pledge.network.handler.PacketFrameOutboundQueueHandler;
+import dev.thomazz.pledge.network.handler.PacketFrameOutboundHeadHandler;
+import dev.thomazz.pledge.network.handler.PacketFrameOutboundTailHandler;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.util.MinecraftUtil;
 
@@ -36,7 +36,7 @@ public class PlayerHandler {
     private final int rangeStart;
     private final int rangeEnd;
 
-    private PacketFrameOutboundHandler netHandler;
+    private PacketFrameOutboundHeadHandler netHandler;
 
     private int id;
     private PacketFrame nextFrame;
@@ -64,14 +64,14 @@ public class PlayerHandler {
 
         // Create new channel handlers
         PacketFrameInboundHandler inbound = new PacketFrameInboundHandler(this, provider);
-        PacketFrameOutboundQueueHandler queueHandler = new PacketFrameOutboundQueueHandler();
-        this.netHandler = new PacketFrameOutboundHandler(this, provider, queueHandler);
+        PacketFrameOutboundTailHandler queueHandler = new PacketFrameOutboundTailHandler();
+        this.netHandler = new PacketFrameOutboundHeadHandler(pledge, this, provider, queueHandler);
 
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
         this.channel.eventLoop().execute(() -> {
             this.channel.pipeline().addAfter("decoder", PacketFrameInboundHandler.HANDLER_NAME, inbound);
-            this.channel.pipeline().addAfter("prepender", PacketFrameOutboundQueueHandler.HANDLER_NAME, queueHandler);
-            this.channel.pipeline().addAfter("encoder", PacketFrameOutboundHandler.HANDLER_NAME, this.netHandler);
+            this.channel.pipeline().addAfter("prepender", PacketFrameOutboundTailHandler.HANDLER_NAME, queueHandler);
+            this.channel.pipeline().addAfter("encoder", PacketFrameOutboundHeadHandler.HANDLER_NAME, this.netHandler);
         });
     }
 
