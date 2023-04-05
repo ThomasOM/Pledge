@@ -32,15 +32,15 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 	private final PledgeImpl pledge;
 	private final PlayerHandler playerHandler;
 	private final PacketProvider packetProvider;
-	private final PacketFrameOutboundTailHandler queueHandler;
+	private final PacketFrameOutboundTailHandler tailHandler;
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
 		// Communicate to queue handler that some packets should be discarded or not since we queue them here
 		if (this.packetProvider.isDisconnect(msg) || this.packetProvider.isKeepAlive(msg)) {
-			this.queueHandler.setDiscard(false);
+			this.tailHandler.setDiscard(false);
 		} else {
-			this.queueHandler.setDiscard(true);
+			this.tailHandler.setDiscard(true);
 		}
 
 		super.write(ctx, msg, promise);
@@ -58,14 +58,16 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 			int id1 = frame.getId1();
 			int id2 = frame.getId2();
 
+			// Transactions
 			Object packet1 = this.packetProvider.buildPacket(id1);
 			Object packet2 = this.packetProvider.buildPacket(id2);
+			this.messageQueue.addFirst(packet1);
+			this.messageQueue.addLast(packet2);
+
+			this.tailHandler.setDiscard(false);
 
 			// Use queue context as target
 			ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
-
-			this.messageQueue.addFirst(packet1);
-			this.messageQueue.addLast(packet2);
 
 			// Packet bundle support
 			if (this.pledge.supportsBundles()) {
@@ -79,6 +81,7 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 				}
 			}
 
+			this.tailHandler.setDiscard(true);
 			Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(player, frame));
 		}
 
