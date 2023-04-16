@@ -20,8 +20,12 @@ public final class ChannelHelper {
 
         ByteBuf out;
         if (compress != null) {
-            out = ctx.alloc().buffer();
-            ChannelHelper.ENCODE.invoke(compress, ctx, encoded, out);
+            try {
+                out = ctx.alloc().buffer();
+                ChannelHelper.ENCODE.invoke(compress, ctx, encoded, out);
+            } finally {
+                encoded.release();
+            }
         } else {
             out = encoded;
         }
