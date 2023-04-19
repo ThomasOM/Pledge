@@ -137,7 +137,7 @@ public class PledgeImpl implements Pledge, Listener {
         // Unregister listening for player join and quit
         HandlerList.unregisterAll(this);
 
-        // Clean up all of the player handlers
+        // Clean up all player handlers
         this.playerHandlers.values().forEach(PlayerHandler::cleanUp);
         this.playerHandlers.clear();
 
