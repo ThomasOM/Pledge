@@ -1,7 +1,7 @@
 package dev.thomazz.pledge.packet.providers;
 
 import dev.thomazz.pledge.packet.PacketProvider;
-import dev.thomazz.pledge.util.MinecraftUtil;
+import dev.thomazz.pledge.util.MinecraftReflection;
 import dev.thomazz.pledge.util.ReflectionUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 public class TransactionPacketProvider implements PacketProvider {
     private final Class<?> inTransactionClass;
     private final Class<?> outTransactionClass;
+    private final Class<?> loginClass;
     private final Class<?> keepAliveClass;
     private final Class<?> disconnectClass;
 
@@ -16,10 +17,11 @@ public class TransactionPacketProvider implements PacketProvider {
     private final Constructor<?> outTransactionConstructor;
 
     public TransactionPacketProvider() throws Exception {
-        this.inTransactionClass = MinecraftUtil.gamePacket("PacketPlayInTransaction");
-        this.outTransactionClass = MinecraftUtil.gamePacket("PacketPlayOutTransaction");
-        this.keepAliveClass = MinecraftUtil.gamePacket("PacketPlayOutKeepAlive");
-        this.disconnectClass = MinecraftUtil.gamePacket("PacketPlayOutKickDisconnect");
+        this.inTransactionClass = MinecraftReflection.gamePacket("PacketPlayInTransaction");
+        this.outTransactionClass = MinecraftReflection.gamePacket("PacketPlayOutTransaction");
+        this.loginClass = MinecraftReflection.gamePacket("PacketPlayOutLogin");
+        this.keepAliveClass = MinecraftReflection.gamePacket("PacketPlayOutKeepAlive");
+        this.disconnectClass = MinecraftReflection.gamePacket("PacketPlayOutKickDisconnect");
 
         this.inTransactionIdField = ReflectionUtil.getFieldByType(this.inTransactionClass, short.class);
         this.outTransactionConstructor = this.outTransactionClass.getConstructor(int.class, short.class, boolean.class);
@@ -37,6 +39,11 @@ public class TransactionPacketProvider implements PacketProvider {
         }
 
         return null;
+    }
+
+    @Override
+    public boolean isLogin(Object packet) {
+        return this.loginClass.isInstance(packet);
     }
 
     @Override

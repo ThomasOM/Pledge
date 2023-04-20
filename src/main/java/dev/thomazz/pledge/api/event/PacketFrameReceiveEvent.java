@@ -8,7 +8,7 @@ import org.bukkit.event.HandlerList;
 /**
  * Called when receiving a response from the client corresponding to a {@link PacketFrame}
  * For extra info see {@link ReceiveType}
- *
+ * <p>
  * Note: This event is called from the netty event loop
  */
 @Getter

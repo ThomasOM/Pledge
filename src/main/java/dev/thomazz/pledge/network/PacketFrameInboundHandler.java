@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.network.handler;
+package dev.thomazz.pledge.network;
 
 import dev.thomazz.pledge.PlayerHandler;
 import dev.thomazz.pledge.packet.PacketProvider;

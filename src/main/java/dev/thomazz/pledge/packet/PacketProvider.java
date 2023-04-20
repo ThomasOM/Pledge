@@ -5,6 +5,8 @@ public interface PacketProvider {
 
     Integer idFromPacket(Object packet) throws Exception;
 
+    boolean isLogin(Object packet);
+
     boolean isKeepAlive(Object packet);
 
     boolean isDisconnect(Object packet);

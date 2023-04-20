@@ -7,7 +7,7 @@ import org.bukkit.event.HandlerList;
 
 /**
  * Called right before when a packet frame is sent to the player client.
- *
+ * <p>
  * Note: This event is called from the netty event loop
  */
 @Getter

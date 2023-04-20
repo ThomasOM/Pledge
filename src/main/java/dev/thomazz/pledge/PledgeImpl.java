@@ -2,32 +2,37 @@ package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.Pledge;
+import dev.thomazz.pledge.channel.ChannelAccess;
+import dev.thomazz.pledge.channel.ReflectiveChannelAccess;
 import dev.thomazz.pledge.packet.PacketBundleBuilder;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.packet.PacketProviderFactory;
+
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import dev.thomazz.pledge.util.TickEndTask;
+import io.netty.channel.Channel;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 @Getter
 public class PledgeImpl implements Pledge, Listener {
-    @Getter
-    private static PledgeImpl instance;
-
+    private final ChannelAccess channelAccess = new ReflectiveChannelAccess();
     private final PacketBundleBuilder packetBundleBuilder = new PacketBundleBuilder();
     private final PacketProvider packetProvider = PacketProviderFactory.build();
     private final Map<UUID, PlayerHandler> playerHandlers = new HashMap<>();
@@ -50,8 +55,12 @@ public class PledgeImpl implements Pledge, Listener {
     private boolean destroyed = false;
 
     private void createHandler(Player player) {
+        this.createHandler(player, this.channelAccess.getChannel(player));
+    }
+
+    private void createHandler(Player player, Channel channel) {
         try {
-            PlayerHandler handler = new PlayerHandler(player);
+            PlayerHandler handler = new PlayerHandler(this, player, channel);
             this.playerHandlers.put(player.getUniqueId(), handler);
         } catch (Exception e) {
             this.plugin.getLogger().severe("Could not create Pledge player handler!");
@@ -91,6 +100,7 @@ public class PledgeImpl implements Pledge, Listener {
         // Frame creation for all online players if a frame interval is set
         if (this.frameInterval > 0) {
             this.playerHandlers.values().stream()
+                .filter(PlayerHandler::isActive)
                 .filter(handler -> handler.getCreationTicks() >= this.frameInterval)
                 .forEach(PlayerHandler::createNextFrame);
         }
@@ -142,7 +152,6 @@ public class PledgeImpl implements Pledge, Listener {
         this.playerHandlers.clear();
 
         // Clear instance to allow creation of a new one
-        PledgeImpl.instance = null;
         this.destroyed = true;
     }
 
@@ -201,27 +210,14 @@ public class PledgeImpl implements Pledge, Listener {
 
     // Lowest priority to have data be available on join event
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        this.createHandler(event.getPlayer());
-    }
-
-    // Highest priority to always inject handlers after other plugins
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerJoinLate(PlayerJoinEvent event) {
-        this.getHandler(event.getPlayer()).ifPresent(handler -> handler.inject(this));
+    public void onPlayerLogin(PlayerLoginEvent event) {
+        InetAddress address = event.getAddress();
+        this.createHandler(event.getPlayer(), this.channelAccess.getChannel(address));
     }
 
     // If for some reason we want this to be available on the quit event
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         this.removeHandler(event.getPlayer());
-    }
-
-    public static PledgeImpl init() {
-        if (PledgeImpl.instance != null) {
-            throw new IllegalStateException("Can not instantiate multiple Pledge instances!");
-        }
-
-        return PledgeImpl.instance = new PledgeImpl();
     }
 }

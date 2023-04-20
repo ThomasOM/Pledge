@@ -1,10 +1,11 @@
-package dev.thomazz.pledge.network.handler;
+package dev.thomazz.pledge.network;
 
 import dev.thomazz.pledge.PlayerHandler;
 import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.PacketFlushEvent;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
+import dev.thomazz.pledge.api.event.ActivateHandlerEvent;
 import dev.thomazz.pledge.packet.PacketBundleBuilder;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.util.ChannelHelper;
@@ -35,20 +36,43 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+		// Login event handling
+		if (this.packetProvider.isLogin(msg)) {
+			Player player = this.playerHandler.getPlayer();
+			Bukkit.getPluginManager().callEvent(new ActivateHandlerEvent(player));
+			super.write(ctx, msg, promise);
+			this.start();
+			return;
+		}
+
+		// Normal behaviour before handler starts
+		if (!this.playerHandler.isActive()) {
+			super.write(ctx, msg, promise);
+			return;
+		}
+
 		// Communicate to queue handler that some packets should be discarded or not since we queue them here
 		if (this.packetProvider.isDisconnect(msg) || this.packetProvider.isKeepAlive(msg)) {
-			this.tailHandler.setDiscard(false);
-			super.write(ctx, msg, promise);
-			super.flush(ctx);
+			try (AutoCloseable ignored = this.tailHandler.open()) {
+				super.write(ctx, msg, promise);
+				super.flush(ctx);
+			}
 		} else {
 			this.messageQueue.add(msg);
-			this.tailHandler.setDiscard(true);
 			super.write(ctx, msg, promise);
 		}
 	}
 
 	@Override
 	public void flush(ChannelHandlerContext ctx) throws Exception {
+		// Do not allow explicit flushing when started
+		if (!this.playerHandler.isActive()) {
+			super.flush(ctx);
+		}
+	}
+
+	// Called to drain all queued packets lower into the pipeline and finally flush
+	public void drain(ChannelHandlerContext ctx) throws Exception {
 		// Call flush event right before flushing to allow for some final changes to the queue
 		Player player = this.playerHandler.getPlayer();
 		Bukkit.getPluginManager().callEvent(new PacketFlushEvent(player, this.messageQueue));
@@ -76,23 +100,23 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 			Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(player, frame));
 		}
 
-		// Drain all queued packets to target and flush
-		this.tailHandler.setDiscard(false);
-		try {
-			ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
+		// Drain all queued packets after the tail handler
+		ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
 
-			Object packet;
-			while ((packet = this.messageQueue.poll()) != null) {
-				target.write(ChannelHelper.encodeAndCompress(ctx, packet));
-			}
-
-			super.flush(ctx);
-		} finally {
-			this.tailHandler.setDiscard(true);
+		Object packet;
+		while ((packet = this.messageQueue.poll()) != null) {
+			target.write(ChannelHelper.encodeAndCompress(ctx, packet));
 		}
+
+		// Finally flush all packets at once
+		super.flush(ctx);
 	}
 
 	public void flushFrame(PacketFrame frame) {
 		this.flushFrames.add(frame);
+	}
+
+	public void start() {
+		this.playerHandler.setActive(true);
 	}
 }

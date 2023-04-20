@@ -36,12 +36,18 @@ public final class TickEndTask {
         }
 
         if (!Runnable.class.isAssignableFrom(TickEndTask.RUNNABLE_CLASS)) {
+            Object handle = new Object();
             this.registeredObject = Proxy.newProxyInstance(
                 TickEndTask.RUNNABLE_CLASS.getClassLoader(),
                 new Class[]{TickEndTask.RUNNABLE_CLASS},
                 (proxy, method, args) -> {
-                    this.runnable.run();
-                    return null;
+                    Class<?> declaring = method.getDeclaringClass();
+                    if (declaring.equals(Object.class)) {
+                        return method.invoke(handle, args);
+                    } else {
+                        this.runnable.run();
+                        return null;
+                    }
                 }
             );
         } else {
@@ -52,13 +58,12 @@ public final class TickEndTask {
         return this;
     }
 
-    public TickEndTask cancel() {
+    public void cancel() {
         if (this.registeredObject == null) {
             throw new IllegalStateException("Not registered yet!");
         }
 
         TickEndTask.RUNNABLES.remove(this.registeredObject);
         this.registeredObject = null;
-        return this;
     }
 }
