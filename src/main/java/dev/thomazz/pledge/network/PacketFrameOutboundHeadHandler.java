@@ -9,6 +9,7 @@ import dev.thomazz.pledge.api.event.ActivateHandlerEvent;
 import dev.thomazz.pledge.packet.PacketBundleBuilder;
 import dev.thomazz.pledge.packet.PacketProvider;
 import dev.thomazz.pledge.util.ChannelHelper;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -36,6 +37,15 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+		// What the fuck
+		if (msg instanceof ByteBuf) {
+			ByteBuf buf = (ByteBuf) msg;
+			this.pledge.getPlugin().getLogger().severe("buf: " + buf.readableBytes());
+			ctx.channel().pipeline().forEach(entry -> this.pledge.getPlugin().getLogger().severe(entry.getKey()));
+			super.write(ctx, msg, promise);
+			return;
+		}
+
 		// Login event handling
 		if (this.packetProvider.isLogin(msg)) {
 			Player player = this.playerHandler.getPlayer();
