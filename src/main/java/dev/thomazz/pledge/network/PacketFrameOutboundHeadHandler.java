@@ -14,21 +14,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import javax.annotation.Nullable;
+
 @RequiredArgsConstructor
 public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapter {
 	public static final String HANDLER_NAME = "pledge_frame_outbound_head";
-
-	private final Queue<PacketFrame> flushFrames = new ConcurrentLinkedQueue<>();
-	private final Deque<Object> messageQueue = new ArrayDeque<>();
+	private final Deque<Object> messageQueue = new ConcurrentLinkedDeque<>();
 
 	private final PledgeImpl pledge;
 	private final PlayerHandler playerHandler;
@@ -45,8 +43,7 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 		// Login event handling
 		if (this.packetProvider.isLogin(msg)) {
-			Player player = this.playerHandler.getPlayer();
-			Bukkit.getPluginManager().callEvent(new ActivateHandlerEvent(player));
+			Bukkit.getPluginManager().callEvent(new ActivateHandlerEvent(this.playerHandler.getPlayer()));
 			super.write(ctx, msg, promise);
 			this.start();
 			return;
@@ -60,9 +57,12 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 		// Communicate to queue handler that some packets should be discarded or not since we queue them here
 		if (this.packetProvider.isDisconnect(msg) || this.packetProvider.isKeepAlive(msg)) {
-			try (AutoCloseable ignored = this.tailHandler.open()) {
+			this.tailHandler.setDiscard(false);
+			try {
 				super.write(ctx, msg, promise);
 				super.flush(ctx);
+			} finally {
+				this.tailHandler.setDiscard(true);
 			}
 		} else {
 			this.messageQueue.add(msg);
@@ -79,13 +79,11 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 	}
 
 	// Called to drain all queued packets lower into the pipeline and finally flush
-	public void drain(ChannelHandlerContext ctx) throws Exception {
+	public void drain(ChannelHandlerContext ctx, @Nullable PacketFrame frame) throws Exception {
 		// Call flush event right before flushing to allow for some final changes to the queue
 		Player player = this.playerHandler.getPlayer();
 		Bukkit.getPluginManager().callEvent(new PacketFlushEvent(player, this.messageQueue));
 
-		// Try to wrap the queue in signaling packets if desired
-		PacketFrame frame = this.flushFrames.poll();
 		if (frame != null) {
 			int id1 = frame.getId1();
 			int id2 = frame.getId2();
@@ -111,16 +109,12 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 		ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
 
 		Object packet;
-		while ((packet = this.messageQueue.poll()) != null) {
+		while ((packet = this.messageQueue.pollFirst()) != null) {
 			target.write(ChannelHelper.encodeAndCompress(ctx, packet));
 		}
 
 		// Finally flush all packets at once
 		super.flush(ctx);
-	}
-
-	public void flushFrame(PacketFrame frame) {
-		this.flushFrames.add(frame);
 	}
 
 	public void start() {

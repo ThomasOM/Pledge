@@ -12,7 +12,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapter implements AutoCloseable {
+public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapter {
     public static final String HANDLER_NAME = "pledge_frame_outbound_tail";
 
     private final PlayerHandler playerHandler;
@@ -31,15 +31,5 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
         } else {
             super.write(ctx, msg, promise);
         }
-    }
-
-    @Override
-    public void close() {
-        this.discard = true;
-    }
-
-    public PacketFrameOutboundTailHandler open() {
-        this.discard = false;
-        return this;
     }
 }

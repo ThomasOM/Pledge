@@ -115,19 +115,18 @@ public class PlayerHandler {
     }
 
     public void tickEnd() {
-        // Make sure to offer the next frame to the handler and the awaiting frame queue
-        PacketFrame frame = this.currentFrame.getAndSet(null);
-        if (frame != null) {
-            this.frameQueue.offer(frame);
-            this.netHandler.flushFrame(frame);
-        }
-
-        // Drain net handler since flushing is overridden
         this.channel.eventLoop().execute(() -> {
+            // Make sure to offer the next frame to the handler and the awaiting frame queue
+            PacketFrame frame = this.currentFrame.getAndSet(null);
+            if (frame != null) {
+                this.frameQueue.offer(frame);
+            }
+
+            // Drain net handler since flushing is overridden
             ChannelHandlerContext context = this.channel.pipeline().context(this.netHandler);
 
             try {
-                this.netHandler.drain(context);
+                this.netHandler.drain(context, frame);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
