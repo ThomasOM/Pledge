@@ -37,11 +37,8 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-		// What the fuck
+		// Only handle packet messages
 		if (msg instanceof ByteBuf) {
-			ByteBuf buf = (ByteBuf) msg;
-			this.pledge.getPlugin().getLogger().severe("buf: " + buf.readableBytes());
-			ctx.channel().pipeline().forEach(entry -> this.pledge.getPlugin().getLogger().severe(entry.getKey()));
 			super.write(ctx, msg, promise);
 			return;
 		}
