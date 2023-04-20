@@ -125,7 +125,7 @@ public class PledgeImpl implements Pledge, Listener {
         this.tickEndTask = new TickEndTask(this::tickEnd).start();
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        plugin.getLogger().info("Started up Pledge 2.4");
+        plugin.getLogger().info("Started up Pledge");
 
         // Mainly for reload support or when starting later
         Bukkit.getOnlinePlayers().forEach(this::createHandler);
