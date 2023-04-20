@@ -16,9 +16,7 @@ import java.util.UUID;
 
 import dev.thomazz.pledge.util.TickEndTask;
 import io.netty.channel.Channel;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -127,7 +125,7 @@ public class PledgeImpl implements Pledge, Listener {
         this.tickEndTask = new TickEndTask(this::tickEnd).start();
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        plugin.getLogger().info("Started up Pledge");
+        plugin.getLogger().info("Started up Pledge 2.4");
 
         // Mainly for reload support or when starting later
         Bukkit.getOnlinePlayers().forEach(this::createHandler);
@@ -200,7 +198,7 @@ public class PledgeImpl implements Pledge, Listener {
     @Override
     public Optional<PacketFrame> getFrame(UUID playerId) {
         this.validateActive();
-        return this.getHandler(playerId).flatMap(PlayerHandler::getNextFrame);
+        return this.getHandler(playerId).flatMap(PlayerHandler::getCurrentFrame);
     }
 
     @Override

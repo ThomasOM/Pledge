@@ -1,7 +1,6 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
-import dev.thomazz.pledge.api.Pledge;
 import dev.thomazz.pledge.api.event.ErrorType;
 import dev.thomazz.pledge.api.event.PacketFrameCreateEvent;
 import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
@@ -17,6 +16,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,29 +33,27 @@ public class PlayerHandler {
     @Getter
     private final Player player;
     private final Channel channel;
-
     private final PacketFrameOutboundHeadHandler netHandler;
 
     private final int rangeStart;
     private final int rangeEnd;
 
-    private int id;
-    private PacketFrame nextFrame;
-    private PacketFrame receivingFrame;
+    private final AtomicReference<PacketFrame> currentFrame = new AtomicReference<>();
+    private final AtomicReference<PacketFrame> receivingFrame = new AtomicReference<>();
+    private final AtomicInteger id;
 
-    @Getter
-    private int creationTicks;
-    private int waitingTicks;
-    private boolean timedOut;
+    private final AtomicInteger waitingTicks = new AtomicInteger();
+    private final AtomicInteger creationTicks = new AtomicInteger();
 
-    private volatile boolean active = false;
+    private volatile boolean timedOut;
+    private volatile boolean active;
 
     public PlayerHandler(PledgeImpl pledge, Player player, Channel channel) {
         this.pledge = pledge;
         this.player = player;
         this.channel = channel;
 
-        this.id = this.rangeStart = pledge.getRangeStart();
+        this.id = new AtomicInteger(this.rangeStart = pledge.getRangeStart());
         this.rangeEnd = pledge.getRangeEnd();
 
         // Create new channel handlers
@@ -64,20 +63,26 @@ public class PlayerHandler {
         this.netHandler = new PacketFrameOutboundHeadHandler(pledge, this, provider, queueHandler);
 
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
-        this.channel.eventLoop().execute(() -> {
+        Runnable runnable = () -> {
             this.channel.pipeline().addAfter("decoder", PacketFrameInboundHandler.HANDLER_NAME, inbound);
             this.channel.pipeline().addAfter("prepender", PacketFrameOutboundTailHandler.HANDLER_NAME, queueHandler);
             this.channel.pipeline().addAfter("encoder", PacketFrameOutboundHeadHandler.HANDLER_NAME, this.netHandler);
-        });
+        };
+
+        // Check if in event loop
+        if (this.channel.eventLoop().inEventLoop()) {
+            runnable.run();
+        } else {
+            this.channel.eventLoop().execute(runnable);
+        }
     }
 
     private int getAndUpdateId() {
-        int previous = this.id;
+        int previous = this.id.get();
 
-        int increment = Integer.compare(this.rangeEnd - this.rangeStart, 0);
-        this.id += increment;
-        if (this.rangeEnd > this.rangeStart ? this.id > this.rangeEnd : this.id < this.rangeEnd) {
-            this.id = this.rangeStart;
+        int result = this.id.addAndGet(Integer.compare(this.rangeEnd - this.rangeStart, 0));
+        if (this.rangeEnd > this.rangeStart ? result > this.rangeEnd : result < this.rangeEnd) {
+            this.id.set(this.rangeStart);
         }
 
         return previous;
@@ -88,7 +93,7 @@ public class PlayerHandler {
     }
 
     private void resetWaitTicks() {
-        this.waitingTicks = 0;
+        this.waitingTicks.set(0);
         this.timedOut = false;
     }
 
@@ -97,7 +102,7 @@ public class PlayerHandler {
         PacketFrame waiting = this.frameQueue.peek();
         if (waiting != null) {
             // Make sure that we don't spam call the event and wait for the next reset
-            if (++this.waitingTicks > this.pledge.getTimeoutTicks() && !this.timedOut) {
+            if (this.waitingTicks.incrementAndGet() > this.pledge.getTimeoutTicks() && !this.timedOut) {
                 this.callEvent(new PacketFrameTimeoutEvent(this.player, waiting));
                 this.timedOut = true;
             }
@@ -106,15 +111,15 @@ public class PlayerHandler {
         }
 
         // Increment ticks since last frame was created
-        this.creationTicks++;
+        this.creationTicks.incrementAndGet();
     }
 
     public void tickEnd() {
         // Make sure to offer the next frame to the handler and the awaiting frame queue
-        if (this.nextFrame != null) {
-            this.frameQueue.offer(this.nextFrame);
-            this.netHandler.flushFrame(this.nextFrame);
-            this.nextFrame = null;
+        PacketFrame frame = this.currentFrame.getAndSet(null);
+        if (frame != null) {
+            this.frameQueue.offer(frame);
+            this.netHandler.flushFrame(frame);
         }
 
         // Drain net handler since flushing is overridden
@@ -136,20 +141,21 @@ public class PlayerHandler {
             return false;
         }
 
-        if (this.receivingFrame == null) {
+        PacketFrame receiving = this.receivingFrame.get();
+        if (receiving == null) {
             PacketFrame frame = this.frameQueue.peek();
             if (frame != null && frame.getId1() == id) {
-                this.receivingFrame = this.frameQueue.poll();
+                this.receivingFrame.set(this.frameQueue.poll());
                 this.callEvent(new PacketFrameReceiveEvent(this.player, frame, ReceiveType.RECEIVE_START));
             } else {
                 this.callEvent(new PacketFrameErrorEvent(this.player, frame, ErrorType.MISSING_FRAME));
             }
         } else {
-            if (this.receivingFrame.getId2() == id) {
-                this.callEvent(new PacketFrameReceiveEvent(this.player, this.receivingFrame, ReceiveType.RECEIVE_END));
-                this.receivingFrame = null;
+            if (receiving.getId2() == id) {
+                this.callEvent(new PacketFrameReceiveEvent(this.player, receiving, ReceiveType.RECEIVE_END));
+                this.receivingFrame.set(null);
             } else {
-                this.callEvent(new PacketFrameErrorEvent(this.player, this.receivingFrame, ErrorType.INCOMPLETE_FRAME));
+                this.callEvent(new PacketFrameErrorEvent(this.player, receiving, ErrorType.INCOMPLETE_FRAME));
             }
         }
 
@@ -158,8 +164,8 @@ public class PlayerHandler {
         return true;
     }
 
-    public Optional<PacketFrame> getNextFrame() {
-        return Optional.ofNullable(this.nextFrame);
+    public Optional<PacketFrame> getCurrentFrame() {
+        return Optional.ofNullable(this.currentFrame.get());
     }
 
     // Creates a new frame for the current tick if there is not already one
@@ -168,14 +174,15 @@ public class PlayerHandler {
             throw new IllegalStateException("Handler has not been activated yet!");
         }
 
-        if (this.nextFrame == null) {
-            this.nextFrame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId());
-            this.callEvent(new PacketFrameCreateEvent(this.player, this.nextFrame));
+        PacketFrame frame = this.currentFrame.get();
+        if (frame == null) {
+            this.currentFrame.set(frame = new PacketFrame(this.getAndUpdateId(), this.getAndUpdateId()));
+            this.callEvent(new PacketFrameCreateEvent(this.player, frame));
         }
 
         // Reset creation ticks
-        this.creationTicks = 0;
-        return this.nextFrame;
+        this.creationTicks.set(0);
+        return frame;
     }
 
     public boolean isActive() {
@@ -184,6 +191,10 @@ public class PlayerHandler {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public int getCreationTicks() {
+        return this.creationTicks.get();
     }
 
     public void cleanUp() {
