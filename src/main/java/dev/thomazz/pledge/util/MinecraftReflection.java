@@ -1,6 +1,7 @@
 package dev.thomazz.pledge.util;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 import lombok.experimental.UtilityClass;
 import org.bukkit.Bukkit;
@@ -23,6 +24,37 @@ public class MinecraftReflection {
 
         // Otherwise try the game packet class
         return Class.forName("net.minecraft.network.protocol.game." + className);
+    }
+
+    public Class<?> getMinecraftClass(String... names) {
+        String[] packageNames = new String[] {
+            MinecraftReflection.getMinecraftPackage(),
+            MinecraftReflection.getMinecraftPackageLegacy()
+        };
+
+        for (String packageName : packageNames) {
+            for(String name : names) {
+                try {
+                    return Class.forName(packageName + "." + name);
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+
+        throw new RuntimeException("Could not find minecraft class: " + Arrays.toString(names));
+    }
+
+    public String getCraftBukkitPackage() {
+        return Bukkit.getServer().getClass().getPackage().getName();
+    }
+
+    public String getMinecraftPackage() {
+        return "net.minecraft";
+    }
+
+    public String getMinecraftPackageLegacy() {
+        return MinecraftReflection.getCraftBukkitPackage()
+            .replace("org.bukkit.craftbukkit", "net.minecraft.server");
     }
 
     public Object getServerConnection() throws Exception {

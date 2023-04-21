@@ -209,8 +209,8 @@ public class PledgeImpl implements Pledge, Listener {
     // Lowest priority to have data be available on join event
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerLogin(PlayerLoginEvent event) {
-        InetAddress address = event.getAddress();
-        this.createHandler(event.getPlayer(), this.channelAccess.getChannel(address));
+        Player player = event.getPlayer();
+        this.createHandler(player, this.channelAccess.getChannel(player));
     }
 
     // If for some reason we want this to be available on the quit event
