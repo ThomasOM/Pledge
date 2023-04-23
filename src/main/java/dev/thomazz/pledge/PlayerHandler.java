@@ -125,10 +125,13 @@ public class PlayerHandler {
             // Drain net handler since flushing is overridden
             ChannelHandlerContext context = this.channel.pipeline().context(this.netHandler);
 
-            try {
-                this.netHandler.drain(context, frame);
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
+            // Context could be null if the channel already had the net handler removed
+            if (context != null) {
+                try {
+                    this.netHandler.drain(context, frame);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
     }

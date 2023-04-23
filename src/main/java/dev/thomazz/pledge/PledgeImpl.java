@@ -207,14 +207,19 @@ public class PledgeImpl implements Pledge, Listener {
     }
 
     // Lowest priority to have data be available on join event
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerLogin(PlayerLoginEvent event) {
+        // No reason to create a handler if login isn't allowed
+        if (event.getResult() != PlayerLoginEvent.Result.ALLOWED) {
+            return;
+        }
+
         Player player = event.getPlayer();
         this.createHandler(player, this.channelAccess.getChannel(player));
     }
 
     // If for some reason we want this to be available on the quit event
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         this.removeHandler(event.getPlayer());
     }
