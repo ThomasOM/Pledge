@@ -33,7 +33,7 @@ public class PlayerHandler {
     @Getter
     private final Player player;
     private final Channel channel;
-    private final PacketFrameOutboundHeadHandler netHandler;
+    private final PacketFrameOutboundTailHandler tailHandler;
 
     private final int rangeStart;
     private final int rangeEnd;
@@ -59,14 +59,15 @@ public class PlayerHandler {
         // Create new channel handlers
         PacketProvider provider = pledge.getPacketProvider();
         PacketFrameInboundHandler inbound = new PacketFrameInboundHandler(this, provider);
-        PacketFrameOutboundTailHandler queueHandler = new PacketFrameOutboundTailHandler(this);
-        this.netHandler = new PacketFrameOutboundHeadHandler(pledge, this, provider, queueHandler);
+
+        this.tailHandler = new PacketFrameOutboundTailHandler(pledge, this);
+        PacketFrameOutboundHeadHandler headHandler = new PacketFrameOutboundHeadHandler(pledge, this, this.tailHandler);
 
         // We want to be right after the encoder and decoder so there's no interference with other packet listeners
         Runnable runnable = () -> {
             this.channel.pipeline().addAfter("decoder", PacketFrameInboundHandler.HANDLER_NAME, inbound);
-            this.channel.pipeline().addAfter("prepender", PacketFrameOutboundTailHandler.HANDLER_NAME, queueHandler);
-            this.channel.pipeline().addAfter("encoder", PacketFrameOutboundHeadHandler.HANDLER_NAME, this.netHandler);
+            this.channel.pipeline().addAfter("prepender", PacketFrameOutboundTailHandler.HANDLER_NAME, this.tailHandler);
+            this.channel.pipeline().addAfter("encoder", PacketFrameOutboundHeadHandler.HANDLER_NAME, headHandler);
         };
 
         // Check if in event loop
@@ -123,12 +124,12 @@ public class PlayerHandler {
             }
 
             // Drain net handler since flushing is overridden
-            ChannelHandlerContext context = this.channel.pipeline().context(this.netHandler);
+            ChannelHandlerContext context = this.channel.pipeline().context(this.tailHandler);
 
             // Context could be null if the channel already had the net handler removed
             if (context != null) {
                 try {
-                    this.netHandler.drain(context, frame);
+                    this.tailHandler.drain(context, frame);
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
