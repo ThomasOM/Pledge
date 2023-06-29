@@ -29,7 +29,7 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 		// Login event handling
 		if (this.pledge.getPacketProvider().isLogin(msg)) {
-			Bukkit.getPluginManager().callEvent(new ActivateHandlerEvent(this.playerHandler.getPlayer()));
+			Bukkit.getPluginManager().callEvent(new ActivateHandlerEvent(this.playerHandler.getPlayer(), ctx.channel()));
 			super.write(ctx, msg, promise);
 			this.start();
 			return;

@@ -1,5 +1,6 @@
 package dev.thomazz.pledge.api.event;
 
+import io.netty.channel.Channel;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -14,10 +15,12 @@ public class ActivateHandlerEvent extends Event {
     private static final HandlerList handlers = new HandlerList();
 
     private final Player player;
+    private final Channel channel;
 
-    public ActivateHandlerEvent(Player player) {
+    public ActivateHandlerEvent(Player player, Channel channel) {
         super(true);
         this.player = player;
+        this.channel = channel;
     }
 
     @Override
