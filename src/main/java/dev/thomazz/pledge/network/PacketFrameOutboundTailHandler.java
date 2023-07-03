@@ -6,7 +6,6 @@ import dev.thomazz.pledge.api.PacketFrame;
 import dev.thomazz.pledge.api.event.PacketFlushEvent;
 import dev.thomazz.pledge.api.event.PacketFrameSendEvent;
 import dev.thomazz.pledge.packet.PacketBundleBuilder;
-import dev.thomazz.pledge.util.ChannelHelper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -30,7 +29,9 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
 
     private final PledgeImpl pledge;
     private final PlayerHandler playerHandler;
+
     private boolean queue = true;
+    private boolean last = true;
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
@@ -40,8 +41,13 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
             return;
         }
 
+        // Add to queue or
         if (this.queue) {
-            this.messageQueue.add(msg);
+            if (this.last) {
+                this.messageQueue.addLast(msg);
+            } else {
+                this.messageQueue.addFirst(msg);
+            }
         } else {
             super.write(ctx, msg, promise);
         }
@@ -60,14 +66,14 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
             // Transactions
             Object packet1 = this.pledge.getPacketProvider().buildPacket(id1);
             Object packet2 = this.pledge.getPacketProvider().buildPacket(id2);
-            this.messageQueue.addFirst(ChannelHelper.encodeAndCompress(ctx, packet1));
-            this.messageQueue.addLast(ChannelHelper.encodeAndCompress(ctx, packet2));
+            this.wrapFirst(ctx, packet1);
+            this.wrapLast(ctx, packet2);
 
             // Packet bundle support
             PacketBundleBuilder bundleBuilder = this.pledge.getPacketBundleBuilder();
             if (bundleBuilder.isSupported()) {
-                this.messageQueue.addFirst(ChannelHelper.encodeAndCompress(ctx, bundleBuilder.buildDelimiter()));
-                this.messageQueue.addLast(ChannelHelper.encodeAndCompress(ctx, bundleBuilder.buildDelimiter()));
+                this.wrapFirst(ctx, bundleBuilder.buildDelimiter());
+                this.wrapLast(ctx, bundleBuilder.buildDelimiter());
             }
 
             // Call frame send event
@@ -84,5 +90,23 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
 
         // Finally flush all packets at once
         super.flush(ctx);
+    }
+
+    @Override
+    public void flush(ChannelHandlerContext ctx) throws Exception {
+        // Only allow flushing from the drain function
+        if (!this.playerHandler.isActive()) {
+            super.flush(ctx);
+        }
+    }
+
+    private void wrapFirst(ChannelHandlerContext ctx, Object packet) {
+        this.last = false;
+        ctx.channel().write(packet);
+    }
+
+    private void wrapLast(ChannelHandlerContext ctx, Object packet) {
+        this.last = true;
+        ctx.channel().write(packet);
     }
 }

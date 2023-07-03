@@ -1,6 +1,7 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.api.PacketFrame;
+import dev.thomazz.pledge.api.event.ConnectionValidateEvent;
 import dev.thomazz.pledge.api.event.ErrorType;
 import dev.thomazz.pledge.api.event.PacketFrameCreateEvent;
 import dev.thomazz.pledge.api.event.PacketFrameTimeoutEvent;
@@ -35,6 +36,7 @@ public class PlayerHandler {
     private final Channel channel;
     private final PacketFrameOutboundTailHandler tailHandler;
 
+    @Getter
     private final int rangeStart;
     private final int rangeEnd;
 
@@ -47,6 +49,7 @@ public class PlayerHandler {
 
     private volatile boolean timedOut;
     private volatile boolean active;
+    private volatile boolean validated;
 
     public PlayerHandler(PledgeImpl pledge, Player player, Channel channel) {
         this.pledge = pledge;
@@ -138,12 +141,20 @@ public class PlayerHandler {
     }
 
     // Processes incoming ids from netty thread
-    public boolean processId(int id) {
+    public void processId(int id) {
         // Make sure the ID is within the range
         if (id < Math.min(this.rangeStart, this.rangeEnd) || id > Math.max(this.rangeStart, this.rangeEnd)) {
-            return false;
+            return;
         }
 
+        // If awaiting connection validation
+        if (!this.validated && id == this.rangeStart) {
+            this.callEvent(new ConnectionValidateEvent(this.player, id));
+            this.validated = true;
+            return;
+        }
+
+        // Handle sent frames
         PacketFrame receiving = this.receivingFrame.get();
         if (receiving == null) {
             PacketFrame frame = this.frameQueue.peek();
@@ -164,7 +175,6 @@ public class PlayerHandler {
 
         // Reset waiting ticks because we received a correct response
         this.resetWaitTicks();
-        return true;
     }
 
     public Optional<PacketFrame> getCurrentFrame() {

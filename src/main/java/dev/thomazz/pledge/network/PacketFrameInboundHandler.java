@@ -15,10 +15,10 @@ public class PacketFrameInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // Pass received signaling packet ids to the player handler and filtering the packets out for the next handler
+        // Pass received signaling packet ids to the player handler
         Integer id = this.packetProvider.idFromPacket(msg);
-        if (id != null && this.playerHandler.processId(id)) {
-            return;
+        if (id != null) {
+            this.playerHandler.processId(id);
         }
 
         super.channelRead(ctx, msg);

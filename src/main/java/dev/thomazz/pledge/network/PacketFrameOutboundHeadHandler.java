@@ -3,7 +3,6 @@ package dev.thomazz.pledge.network;
 import dev.thomazz.pledge.PlayerHandler;
 import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.api.event.ActivateHandlerEvent;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -21,16 +20,17 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-		// Only handle packet messages
-		if (msg instanceof ByteBuf) {
-			super.write(ctx, msg, promise);
-			return;
-		}
-
 		// Login event handling
 		if (this.pledge.getPacketProvider().isLogin(msg)) {
+			// Handler activation event on login
 			Bukkit.getPluginManager().callEvent(new ActivateHandlerEvent(this.playerHandler.getPlayer(), ctx.channel()));
 			super.write(ctx, msg, promise);
+
+			// Send validation transaction
+			Object validation = this.pledge.getPacketProvider().buildPacket(this.playerHandler.getRangeStart());
+			super.write(ctx, validation, ctx.newPromise());
+
+			// Start handler after validation has been sent
 			this.start();
 			return;
 		}
@@ -52,14 +52,6 @@ public class PacketFrameOutboundHeadHandler extends ChannelOutboundHandlerAdapte
 			}
 		} else {
 			super.write(ctx, msg, promise);
-		}
-	}
-
-	@Override
-	public void flush(ChannelHandlerContext ctx) throws Exception {
-		// Do not allow explicit flushing when started
-		if (!this.playerHandler.isActive()) {
-			super.flush(ctx);
 		}
 	}
 
