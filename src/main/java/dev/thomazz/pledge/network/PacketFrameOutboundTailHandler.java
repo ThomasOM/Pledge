@@ -95,7 +95,7 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
     @Override
     public void flush(ChannelHandlerContext ctx) throws Exception {
         // Only allow flushing from the drain function
-        if (!this.playerHandler.isActive()) {
+        if (!this.playerHandler.isActive() || !this.queue) {
             super.flush(ctx);
         }
     }

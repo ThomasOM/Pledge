@@ -1,6 +1,5 @@
 package dev.thomazz.pledge.api.event;
 
-import dev.thomazz.pledge.api.PacketFrame;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
