@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapter {
     public static final String HANDLER_NAME = "pledge_frame_outbound_tail";
 
-    private final Deque<Object> messageQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<QueuedMessage> messageQueue = new ConcurrentLinkedDeque<>();
 
     private final PledgeImpl pledge;
     private final PlayerHandler playerHandler;
@@ -44,9 +44,9 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
         // Add to queue or
         if (this.queue) {
             if (this.last) {
-                this.messageQueue.addLast(msg);
+                this.messageQueue.addLast(new QueuedMessage(msg, promise));
             } else {
-                this.messageQueue.addFirst(msg);
+                this.messageQueue.addFirst(new QueuedMessage(msg, promise));
             }
         } else {
             super.write(ctx, msg, promise);
@@ -83,9 +83,9 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
         // Drain all queued packets after the tail handler
         ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
 
-        Object message;
-        while ((message = this.messageQueue.pollFirst()) != null) {
-            target.write(message);
+        while (!this.messageQueue.isEmpty()) {
+            final QueuedMessage queuedMessage = this.messageQueue.pollFirst();
+            target.write(queuedMessage.getPacket(), queuedMessage.getPromise());
         }
 
         // Finally flush all packets at once
