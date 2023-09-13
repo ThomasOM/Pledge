@@ -1,5 +1,6 @@
 package dev.thomazz.pledge.api.event;
 
+import dev.thomazz.pledge.network.QueuedMessage;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -16,9 +17,9 @@ public class PacketFlushEvent extends Event {
     private static final HandlerList handlers = new HandlerList();
 
     private final Player player;
-    private final Queue<Object> packets;
+    private final Queue<QueuedMessage> packets;
 
-    public PacketFlushEvent(Player player, Queue<Object> packets) {
+    public PacketFlushEvent(Player player, Queue<QueuedMessage> packets) {
         super(true);
         this.player = player;
         this.packets = packets;
