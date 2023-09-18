@@ -80,12 +80,9 @@ public class PacketFrameOutboundTailHandler extends ChannelOutboundHandlerAdapte
             Bukkit.getPluginManager().callEvent(new PacketFrameSendEvent(player, frame));
         }
 
-        // Drain all queued packets after the tail handler
-        ChannelHandlerContext target = ctx.pipeline().context(PacketFrameOutboundTailHandler.HANDLER_NAME);
-
         while (!this.messageQueue.isEmpty()) {
             final QueuedMessage queuedMessage = this.messageQueue.pollFirst();
-            target.write(queuedMessage.getPacket(), queuedMessage.getPromise());
+            ctx.write(queuedMessage.getPacket(), queuedMessage.getPromise());
         }
 
         // Finally flush all packets at once
