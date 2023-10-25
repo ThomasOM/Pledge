@@ -20,11 +20,29 @@ public class PingPongPacketProvider implements PacketProvider {
         this.pingClass = MinecraftReflection.gamePacket("ClientboundPingPacket");
         this.pongClass = MinecraftReflection.gamePacket("ServerboundPongPacket");
         this.loginClass = MinecraftReflection.gamePacket("PacketPlayOutLogin");
-        this.keepAliveClass = MinecraftReflection.gamePacket("PacketPlayOutKeepAlive");
-        this.disconnectClass = MinecraftReflection.gamePacket("PacketPlayOutKickDisconnect");
+        this.keepAliveClass = getKeepAliveClass();
+        this.disconnectClass = getDisconnectClass();
 
         this.pongIdField = ReflectionUtil.getFieldByType(this.pongClass, int.class);
         this.pingConstructor = this.pingClass.getConstructor(int.class);
+    }
+
+    private Class<?> getKeepAliveClass() throws Exception {
+        try {
+            return MinecraftReflection.gamePacket("PacketPlayOutKeepAlive");
+        } catch (Exception ignored) {
+            // 1.20.2+
+            return MinecraftReflection.gamePacket("ClientboundKeepAlivePacket");
+        }
+    }
+
+    private Class<?> getDisconnectClass() throws Exception {
+        try {
+            return MinecraftReflection.gamePacket("PacketPlayOutKickDisconnect");
+        } catch (Exception ignored) {
+            // 1.20.2+
+            return MinecraftReflection.gamePacket("ClientboundDisconnectPacket");
+        }
     }
 
     @Override
