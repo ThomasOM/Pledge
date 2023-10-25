@@ -23,7 +23,12 @@ public class MinecraftReflection {
         }
 
         // Otherwise try the game packet class
-        return Class.forName("net.minecraft.network.protocol.game." + className);
+        try {
+            return Class.forName("net.minecraft.network.protocol.game." + className);
+        } catch (Exception ignored) {}
+
+        // Otherwise try common packet class for 1.20.2+
+        return Class.forName("net.minecraft.network.protocol.common." + className);
     }
 
     public Class<?> getMinecraftClass(String... names) {

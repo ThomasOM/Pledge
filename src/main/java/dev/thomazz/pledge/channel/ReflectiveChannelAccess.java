@@ -36,11 +36,12 @@ public final class ReflectiveChannelAccess implements ChannelAccess {
             List<Object> networkManagers = this.getNetworkManagers();
 
             Field channelField = ReflectionUtil.getFieldByType(ReflectiveChannelAccess.NETWORK_MANAGER_CLASS, Channel.class);
-            Field listenerField = ReflectionUtil.getFieldByType(ReflectiveChannelAccess.NETWORK_MANAGER_CLASS,
-                ReflectiveChannelAccess.PACKET_LISTENER_CLASS);
+            final List<Field> listenerFields = getListeners();
+            // In 1.20.2 there is now a disconnectListener in addition to packetListener (which is last). So just pick the last in the list.
+            final Field packetListenerField = listenerFields.get(listenerFields.size() - 1);
 
             for (Object networkManager : networkManagers) {
-                Object packetListener = listenerField.get(networkManager);
+                final Object packetListener = packetListenerField.get(networkManager);
                 if (packetListener != null) {
                     if (packetListener.getClass().getSimpleName().equals("LoginListener")) {
                         // We can use the game profile to look up the player id in the listener
@@ -54,7 +55,14 @@ public final class ReflectiveChannelAccess implements ChannelAccess {
                         }
                     } else {
                         // For player connection listeners we can get the player handle
-                        Field playerField = ReflectionUtil.getFieldByClassNames(packetListener.getClass(), "EntityPlayer");
+                        Field playerField;
+                        try {
+                            playerField = ReflectionUtil.getFieldByClassNames(packetListener.getClass(), "EntityPlayer");
+                        } catch (NoSuchFieldException ignored) {
+                            // Might be ServerConfigurationPacketListenerImpl or something else that is unsupported
+                            continue;
+                        }
+
                         Object entityPlayer = playerField.get(packetListener);
                         if (handle.equals(entityPlayer)) {
                             return (Channel) channelField.get(networkManager);
@@ -113,5 +121,22 @@ public final class ReflectiveChannelAccess implements ChannelAccess {
         } catch (Exception ex) {
             throw new RuntimeException("Cannot retrieve network managers", ex);
         }
+    }
+
+    private List<Field> getListeners() {
+        List<Field> listeners = new ArrayList<>();
+        try {
+            for (Field field : NETWORK_MANAGER_CLASS.getDeclaredFields()) {
+                if (!PACKET_LISTENER_CLASS.isAssignableFrom(field.getType())) {
+                    continue;
+                }
+
+                field.setAccessible(true);
+                listeners.add(field);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot retrieve network manager listeners", ex);
+        }
+        return listeners;
     }
 }
