@@ -1,6 +1,6 @@
 package dev.thomazz.pledge.pinger.data;
 
-import dev.thomazz.pledge.pinger.AbstractClientPinger;
+import dev.thomazz.pledge.pinger.ClientPingerImpl;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -15,10 +15,10 @@ public class PingData {
     private final Queue<Ping> expectingIds = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean validated = new AtomicBoolean(false);
     private final Player player;
-    private final AbstractClientPinger pinger;
+    private final ClientPingerImpl pinger;
     private volatile int id;
 
-    public PingData(Player player, AbstractClientPinger pinger) {
+    public PingData(Player player, ClientPingerImpl pinger) {
         this.player = player;
         this.pinger = pinger;
         this.id = pinger.startId();

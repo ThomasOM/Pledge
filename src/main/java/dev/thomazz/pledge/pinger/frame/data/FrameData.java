@@ -36,13 +36,10 @@ public class FrameData {
     }
 
     public Optional<Frame> matchEnd(int id) {
-        Optional<Frame> optional = Optional.ofNullable(this.expectingFrames.peek()).filter(frame -> frame.getEndId() == id);
+        return Optional.ofNullable(this.expectingFrames.peek()).filter(frame -> frame.getEndId() == id);
+    }
 
-        // Make sure to poll from expecting frames as well
-        if (optional.isPresent()) {
-            this.expectingFrames.poll();
-        }
-
-        return optional;
+    public void popFrame() {
+        this.expectingFrames.poll();
     }
 }

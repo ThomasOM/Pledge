@@ -4,7 +4,7 @@ import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.network.queue.ChannelMessageQueueHandler;
 import dev.thomazz.pledge.network.queue.ChannelMessageQueuePrimer;
 import dev.thomazz.pledge.network.queue.QueueMode;
-import dev.thomazz.pledge.pinger.AbstractClientPinger;
+import dev.thomazz.pledge.pinger.ClientPingerImpl;
 import dev.thomazz.pledge.pinger.data.Ping;
 import dev.thomazz.pledge.pinger.data.PingData;
 import dev.thomazz.pledge.pinger.data.PingOrder;
@@ -20,16 +20,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public class FrameClientPingerImpl extends AbstractClientPinger implements FrameClientPinger {
+public class FrameClientPingerImpl extends ClientPingerImpl implements FrameClientPinger {
     private final Map<Player, FrameData> frameDataMap = new LinkedHashMap<>();
-    private final List<FrameListener> frameListener = new ArrayList<>();
+    private final List<FrameClientPingerListener> frameListener = new ArrayList<>();
 
     public FrameClientPingerImpl(PledgeImpl clientPing, int startId, int endId) {
         super(clientPing, startId, endId);
     }
 
     @Override
-    public void attach(FrameListener listener) {
+    public void attach(FrameClientPingerListener listener) {
+        super.attach(listener);
         this.frameListener.add(listener);
     }
 
@@ -75,8 +76,11 @@ public class FrameClientPingerImpl extends AbstractClientPinger implements Frame
 
         FrameData data = this.frameDataMap.get(player);
         if (data != null && this.frameListener != null) {
-            data.matchStart(id).ifPresent(
-                frame -> this.frameListener.forEach(listener -> listener.onFrameReceiveEnd(player, frame))
+            data.matchEnd(id).ifPresent(
+                frame -> {
+                    this.frameListener.forEach(listener -> listener.onFrameReceiveEnd(player, frame));
+                    data.popFrame();
+                }
             );
         }
     }

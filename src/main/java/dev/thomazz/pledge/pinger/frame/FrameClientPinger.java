@@ -24,5 +24,5 @@ public interface FrameClientPinger extends ClientPinger {
      * <p>
      * @param listener - Listener to attach
      */
-    void attach(FrameListener listener);
+    void attach(FrameClientPingerListener listener);
 }

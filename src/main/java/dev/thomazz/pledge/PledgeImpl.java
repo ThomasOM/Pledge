@@ -7,7 +7,6 @@ import dev.thomazz.pledge.event.TickStartEvent;
 import dev.thomazz.pledge.network.NetworkPongListener;
 import dev.thomazz.pledge.packet.PacketProviderFactory;
 import dev.thomazz.pledge.packet.PingPacketProvider;
-import dev.thomazz.pledge.pinger.AbstractClientPinger;
 import dev.thomazz.pledge.pinger.ClientPinger;
 import dev.thomazz.pledge.pinger.ClientPingerImpl;
 import dev.thomazz.pledge.pinger.frame.FrameClientPinger;
@@ -47,7 +46,7 @@ public class PledgeImpl implements Pledge, Listener {
     private final BukkitTask startTask;
     private final TickEndTask endTask;
 
-    private final List<AbstractClientPinger> clientPingers = new ArrayList<>();
+    private final List<ClientPingerImpl> clientPingers = new ArrayList<>();
     private final Map<Player, Channel> playerChannels = new HashMap<>();
 
     PledgeImpl(Plugin plugin) {
@@ -103,12 +102,12 @@ public class PledgeImpl implements Pledge, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     void onTickStart(TickStartEvent ignored) {
-        this.clientPingers.forEach(AbstractClientPinger::tickStart);
+        this.clientPingers.forEach(ClientPingerImpl::tickStart);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     void onTickStart(TickEndEvent ignored) {
-        this.clientPingers.forEach(AbstractClientPinger::tickEnd);
+        this.clientPingers.forEach(ClientPingerImpl::tickEnd);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

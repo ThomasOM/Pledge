@@ -8,18 +8,16 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
 public class PingPongPacketProvider implements PingPacketProvider {
-    private final Class<?> pingClass;
     private final Class<?> pongClass;
-
     private final Field pongIdField;
     private final Constructor<?> pingConstructor;
 
     public PingPongPacketProvider() throws Exception {
-        this.pingClass = MinecraftReflection.gamePacket("ClientboundPingPacket");
         this.pongClass = MinecraftReflection.gamePacket("ServerboundPongPacket");
-
         this.pongIdField = ReflectionUtil.getFieldByType(this.pongClass, int.class);
-        this.pingConstructor = this.pingClass.getConstructor(int.class);
+
+        Class<?> pingClass = MinecraftReflection.gamePacket("ClientboundPingPacket");
+        this.pingConstructor = pingClass.getConstructor(int.class);
     }
 
     @Override

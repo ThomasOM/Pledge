@@ -9,17 +9,15 @@ import java.lang.reflect.Field;
 
 public class TransactionPacketProvider implements PingPacketProvider {
     private final Class<?> inTransactionClass;
-    private final Class<?> outTransactionClass;
-
     private final Field inTransactionIdField;
     private final Constructor<?> outTransactionConstructor;
 
     public TransactionPacketProvider() throws Exception {
         this.inTransactionClass = MinecraftReflection.gamePacket("PacketPlayInTransaction");
-        this.outTransactionClass = MinecraftReflection.gamePacket("PacketPlayOutTransaction");
-
         this.inTransactionIdField = ReflectionUtil.getFieldByType(this.inTransactionClass, short.class);
-        this.outTransactionConstructor = this.outTransactionClass.getConstructor(int.class, short.class, boolean.class);
+
+        Class<?> outTransactionClass = MinecraftReflection.gamePacket("PacketPlayOutTransaction");
+        this.outTransactionConstructor = outTransactionClass.getConstructor(int.class, short.class, boolean.class);
     }
 
     @Override

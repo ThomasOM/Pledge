@@ -11,12 +11,23 @@ public class MinecraftReflection {
     private final String BASE = Bukkit.getServer().getClass().getPackage().getName();
     private final String NMS = MinecraftReflection.BASE.replace("org.bukkit.craftbukkit", "net.minecraft.server");
 
-    public Class<?> gamePacket(String className) throws Exception {
+    public Class<?> gamePacket(String className) throws ClassNotFoundException {
         try {
             return Class.forName(MinecraftReflection.NMS + "." + className); // Legacy structure
         } catch (Exception ignored) {
-            return Class.forName("net.minecraft.network.protocol.game." + className);
         }
+
+        try {
+            return Class.forName("net.minecraft.network.protocol.game." + className); // Game packet
+        } catch (Exception ignored) {
+        }
+
+        try {
+            return Class.forName("net.minecraft.network.protocol.common." + className); // 1.20.2+ common packets
+        } catch (Exception ignored) {
+        }
+
+        throw new ClassNotFoundException("Game packet class not found!");
     }
 
     public Class<?> getMinecraftClass(String... names) {

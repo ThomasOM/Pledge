@@ -1,6 +1,5 @@
 package dev.thomazz.pledge.network.queue;
 
-import dev.thomazz.pledge.packet.PacketWhitelist;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -13,7 +12,7 @@ public class ChannelMessageQueuePrimer extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         // Let whitelisted packets pass through the queue
-        if (PacketWhitelist.isWhiteListed(msg)) {
+        if (PacketQueueWhitelist.isWhitelisted(msg)) {
             QueueMode lastMode = this.queueHandler.getMode();
             this.queueHandler.setMode(QueueMode.PASS);
             try {

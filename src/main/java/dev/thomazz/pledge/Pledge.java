@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 /**
- * Main API object to
+ * Main API object
  */
 public interface Pledge {
     /**

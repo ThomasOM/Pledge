@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 public interface ClientPingerListener {
     /**
      * Called when a player receives the first transaction ID of the {@link ClientPinger}.
-     * After this the player can be considered logged in on the server.
+     * After this the player can be considered active on the server.
      * <p>
      * @param player - Player that the ping response is received from
      * @param id     - ID of ping

@@ -1,5 +1,6 @@
 package dev.thomazz.pledge.util;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
@@ -9,7 +10,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.util.List;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings("unchecked")
 public final class TickEndTask {
     private static List<Object> RUNNABLES;
