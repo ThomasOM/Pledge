@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.test;
+package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.PledgeImpl;
 import dev.thomazz.pledge.packet.PingPacketProvider;

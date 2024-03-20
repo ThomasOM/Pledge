@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Called when a ping packet is sent to a {@link Player}
+ * Note: Executed from netty thread
  */
 @Getter
 @Setter

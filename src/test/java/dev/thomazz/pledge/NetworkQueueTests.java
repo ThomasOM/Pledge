@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.test;
+package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.network.queue.ChannelMessageQueueHandler;
 import dev.thomazz.pledge.network.queue.QueueMode;

@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Called when a pong packet is received from a {@link Player}
+ * Note: Executed from netty thread
  */
 @Getter
 @Setter
