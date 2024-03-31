@@ -14,6 +14,7 @@ import java.util.UUID;
 public final class ChannelAccess {
     private final Class<?> NETWORK_MANAGER_CLASS = MinecraftReflection.getMinecraftClass(
         "network.NetworkManager",
+        "network.Connection",
         "NetworkManager"
     );
 
@@ -24,6 +25,7 @@ public final class ChannelAccess {
 
     private final Class<?> PLAYER_CONNECTION_CLASS = MinecraftReflection.getMinecraftClass(
         "server.network.PlayerConnection",
+        "server.network.ServerGamePacketListenerImpl",
         "PlayerConnection"
     );
 
@@ -33,24 +35,25 @@ public final class ChannelAccess {
             Object handle = player.getClass().getDeclaredMethod("getHandle").invoke(player);
 
             Field playerConnectionField = ReflectionUtil.getFieldByType(handle.getClass(), ChannelAccess.PLAYER_CONNECTION_CLASS);
-            Field networkManagerField = ReflectionUtil.getFieldByType(ChannelAccess.PLAYER_CONNECTION_CLASS, ChannelAccess.NETWORK_MANAGER_CLASS);
             Field channelField = ReflectionUtil.getFieldByType(ChannelAccess.NETWORK_MANAGER_CLASS, Channel.class);
 
             // Try the easy way first
             Object playerConnection = playerConnectionField.get(handle);
             if (playerConnection != null) {
-                Object networkManager = networkManagerField.get(playerConnection);
-                return (Channel) channelField.get(networkManager);
+                try {
+                    Field networkManagerField = ReflectionUtil.getFieldByType(PLAYER_CONNECTION_CLASS, NETWORK_MANAGER_CLASS);
+                    Object networkManager = networkManagerField.get(playerConnection);
+                    return (Channel) channelField.get(networkManager);
+                } catch (NoSuchFieldException ignored) { }
             }
 
             // Try to match all network managers after from game profile
             List<Object> networkManagers = ChannelAccess.getNetworkManagers();
-            Field listenerField = ReflectionUtil.getFieldByType(ChannelAccess.NETWORK_MANAGER_CLASS, ChannelAccess.PACKET_LISTENER_CLASS);
 
             for (Object networkManager : networkManagers) {
-                Object packetListener = listenerField.get(networkManager);
+                Object packetListener = ReflectionUtil.getNonNullFieldByType(networkManager, PACKET_LISTENER_CLASS);
                 if (packetListener != null) {
-                    if (packetListener.getClass().getSimpleName().equals("LoginListener")) {
+                    if (packetListener.getClass().getSimpleName().equals("LoginListener") || packetListener.getClass().getSimpleName().equals("ServerLoginPacketListenerImpl")) {
                         Field profileField = ReflectionUtil.getFieldByClassNames(packetListener.getClass(), "GameProfile");
                         Object gameProfile = profileField.get(packetListener);
 
@@ -64,7 +67,7 @@ public final class ChannelAccess {
                         // For player connection listeners we can get the player handle
                         Field playerField;
                         try {
-                            playerField = ReflectionUtil.getFieldByClassNames(packetListener.getClass(), "EntityPlayer");
+                            playerField = ReflectionUtil.getFieldByClassNames(packetListener.getClass(), "ServerPlayer", "EntityPlayer");
                         } catch (NoSuchFieldException ignored) {
                             // Might be ServerConfigurationPacketListenerImpl or something else that is unsupported
                             continue;
@@ -89,7 +92,8 @@ public final class ChannelAccess {
         try {
             Object serverConnection = MinecraftReflection.getServerConnection();
             for (Field field : serverConnection.getClass().getDeclaredFields()) {
-                if (!List.class.isAssignableFrom(field.getType()) || !field.getGenericType().getTypeName().contains("NetworkManager")) {
+                final String typeName = field.getGenericType().getTypeName();
+                if (!List.class.isAssignableFrom(field.getType()) || (!typeName.contains("NetworkManager") && !typeName.contains("Connection"))) {
                     continue;
                 }
 

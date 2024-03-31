@@ -32,4 +32,18 @@ public class ReflectionUtil {
 
         throw new NoSuchFieldException("Could not find field in class " + clazz.getName() + " with type " + type.getName());
     }
+
+    public Object getNonNullFieldByType(Object instance, Class<?> type) throws ReflectiveOperationException {
+        final Class<?> clazz = instance.getClass();
+        for (Field field : clazz.getDeclaredFields()) {
+            Class<?> foundType = field.getType();
+            if (type.isAssignableFrom(foundType)) {
+                field.setAccessible(true);
+                final Object o = field.get(instance);
+                if (o != null) return o;
+            }
+        }
+
+        throw new NoSuchFieldException("Could not find non-null field in class " + clazz.getName() + " with type " + type.getName());
+    }
 }
