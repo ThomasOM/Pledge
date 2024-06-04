@@ -46,4 +46,12 @@ public interface ClientPingerListener {
      * @param id     - ID of ping
      */
     default void onPongReceiveEnd(Player player, int id) {}
+
+    /**
+     * Called when an unexpected ping response is received from a player.
+     * <p>
+     * @param player - Player that the ping response is received from
+     * @param id     - ID of ping
+     */
+    default void onPongReceiveInvalid(Player player, int id) {}
 }

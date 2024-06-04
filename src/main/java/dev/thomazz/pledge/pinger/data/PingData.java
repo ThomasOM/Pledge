@@ -57,6 +57,9 @@ public class PingData {
             return Optional.ofNullable(this.expectingIds.poll());
         }
 
+        // Notify listeners of an unexpected ping response from player
+        this.pinger.getPingListeners().forEach(listener -> listener.onPongReceiveInvalid(this.player, id));
+
         return Optional.empty();
     }
 }
