@@ -59,7 +59,7 @@ public class ExamplePlugin extends JavaPlugin implements ClientPingerListener {
     @Override
     public void onEnable() {
         this.pledge = Pledge.getOrCreate(this); // Create or get when already registered to another plugin
-        ClientPinger pinger = this.pledge.createPinger(-1, -200); // Ping ids range from -1 to -200
+        ClientPinger pinger = this.pledge.createPinger(ClientPingerOptions.range(-1, -200)); // Ping ids range from -1 to -200
         pinger.attach(this); // Attach listener to pinger
     }
 
@@ -87,14 +87,17 @@ public class ExamplePlugin extends JavaPlugin implements ClientPingerListener {
 
 
 Frame Client Pinger
+
 ```java
+import dev.thomazz.pledge.pinger.ClientPingerOptions;
+
 public class ExamplePlugin extends JavaPlugin implements FrameClientPingerListener {
     private Pledge pledge;
 
     @Override
     public void onEnable() {
         this.pledge = Pledge.getOrCreate(this); // Create or get when already registered to another plugin
-        FrameClientPinger pinger = this.pledge.createFramePinger(-1, -200); // Ping ids range from -1 to -200
+        FrameClientPinger pinger = this.pledge.createFramePinger(ClientPingerOptions.range(-1, -200)); // Ping ids range from -1 to -200
         pinger.attach(this); // Attach listener to pinger
         Bukkit.getScheduler().runTaskTimer(this, () -> Bukkit.getOnlinePlayers().forEach(pinger::getOrCreate), 20L, 20L); // Create a frame every second
     }
@@ -140,7 +143,7 @@ If you want to use this in your project, you can add it as a Maven dependency:
   <dependency>
     <groupId>dev.thomazz</groupId>
     <artifactId>pledge</artifactId>
-    <version>3.4</version>
+    <version>3.5</version>
   </dependency>
 </dependencies>
 ```

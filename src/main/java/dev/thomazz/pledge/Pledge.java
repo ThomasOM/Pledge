@@ -1,6 +1,7 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.pinger.ClientPinger;
+import dev.thomazz.pledge.pinger.ClientPingerOptions;
 import dev.thomazz.pledge.pinger.frame.FrameClientPinger;
 import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
@@ -34,21 +35,19 @@ public interface Pledge {
      * Creates a client pinger.
      * See documentation in {@link ClientPinger} for more info.
      * <p>
-     * @param startId - Start ID for ping range
-     * @param endId   - End ID for ping range
+     * @param options - Options
      * @return        - Client pinger instance
      */
-    ClientPinger createPinger(int startId, int endId);
+    ClientPinger createPinger(ClientPingerOptions options);
 
     /**
      * Creates a frame client pinger.
      * See documentation in {@link FrameClientPinger} for more info.
      * <p>
-     * @param startId - Start ID for ping range
-     * @param endId   - End ID for ping range
+     * @param options - Options
      * @return        - Frame client pinger instance
      */
-    FrameClientPinger createFramePinger(int startId, int endId);
+    FrameClientPinger createFramePinger(ClientPingerOptions options);
 
     /**
      * Destroys the API instance.

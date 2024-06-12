@@ -26,24 +26,26 @@ public class ClientPingerImpl implements ClientPinger {
     protected final PledgeImpl api;
     protected final int startId;
     protected final int endId;
+    protected final boolean consolidate;
 
     protected Predicate<Player> playerFilter = player -> true;
 
-    public ClientPingerImpl(PledgeImpl api, int startId, int endId) {
+    public ClientPingerImpl(PledgeImpl api, ClientPingerOptions options) {
         this.api = api;
 
         PingPacketProvider provider = api.getPacketProvider();
         int upperBound = provider.getUpperBound();
         int lowerBound = provider.getLowerBound();
 
-        this.startId = Math.max(Math.min(upperBound, startId), lowerBound);
-        this.endId = Math.max(Math.min(upperBound, endId), lowerBound);
+        this.startId = Math.max(Math.min(upperBound, options.getStartId()), lowerBound);
+        this.endId = Math.max(Math.min(upperBound, options.getEndId()), lowerBound);
+        this.consolidate = options.isConsolidatePackets();
 
-        if (this.startId != startId) {
+        if (this.startId != options.getStartId()) {
             this.api.getLogger().warning("Changed start ID to fit bounds: " + startId + " -> " + this.startId);
         }
 
-        if (this.endId != endId) {
+        if (this.endId != options.getEndId()) {
             this.api.getLogger().warning("Changed end ID to fit bounds: " + endId + " -> " + this.endId);
         }
     }
@@ -81,6 +83,11 @@ public class ClientPingerImpl implements ClientPinger {
     }
 
     protected void injectPlayer(Player player) {
+        // Only inject consolidator when necessary
+        if (!this.consolidate) {
+            return;
+        }
+
         this.api.getChannel(player).ifPresent(channel ->
             ChannelUtils.runInEventLoop(channel,
                 () -> channel.pipeline().addLast("pledge_tick_consolidator", new NetworkPacketConsolidator())
@@ -89,6 +96,11 @@ public class ClientPingerImpl implements ClientPinger {
     }
 
     protected void ejectPlayer(Player player) {
+        // Only inject consolidator when necessary
+        if (!this.consolidate) {
+            return;
+        }
+
         this.api.getChannel(player).ifPresent(channel ->
             ChannelUtils.runInEventLoop(channel,
                 () -> channel.pipeline().remove(NetworkPacketConsolidator.class)
@@ -154,6 +166,11 @@ public class ClientPingerImpl implements ClientPinger {
     }
 
     public void tickStart() {
+        // Only inject consolidator when necessary
+        if (!this.consolidate) {
+            return;
+        }
+
         this.pingDataMap.forEach((player, data) ->
             this.api.getChannel(player).ifPresent(channel ->
                 ChannelUtils.runInEventLoop(channel, () -> {
@@ -169,6 +186,11 @@ public class ClientPingerImpl implements ClientPinger {
     }
 
     public void tickEnd() {
+        // Only inject consolidator when necessary
+        if (!this.consolidate) {
+            return;
+        }
+
         this.pingDataMap.forEach((player, data) ->
             this.api.getChannel(player).ifPresent(channel ->
                 ChannelUtils.runInEventLoop(channel, () -> {

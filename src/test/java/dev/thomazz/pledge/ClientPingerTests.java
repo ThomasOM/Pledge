@@ -3,12 +3,12 @@ package dev.thomazz.pledge;
 import dev.thomazz.pledge.packet.PingPacketProvider;
 import dev.thomazz.pledge.pinger.ClientPingerImpl;
 import dev.thomazz.pledge.pinger.ClientPingerListener;
+import dev.thomazz.pledge.pinger.ClientPingerOptions;
 import dev.thomazz.pledge.pinger.data.PingData;
 import dev.thomazz.pledge.pinger.frame.FrameClientPingerListener;
 import dev.thomazz.pledge.pinger.frame.data.Frame;
 import dev.thomazz.pledge.pinger.frame.FrameClientPingerImpl;
 import dev.thomazz.pledge.pinger.frame.data.FrameData;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.bukkit.entity.Player;
@@ -56,8 +56,10 @@ public class ClientPingerTests {
     @Test
     @Order(1)
     public void testSimpleClientPinger() {
-        ClientPingerImpl pinger = new ClientPingerImpl(this.clientPing, 0, -999);
+        ClientPingerImpl pinger = new ClientPingerImpl(this.clientPing, ClientPingerOptions.range(0, -999));
+
         pinger.registerPlayer(this.player);
+
         PingData pingData = pinger.getPingData(this.player).orElseThrow(IllegalStateException::new);
 
         for (int i = 0; i < 200; i++) {
@@ -90,7 +92,8 @@ public class ClientPingerTests {
     public void testFrameClientPinger() {
         this.channel.pipeline().addFirst("prepender", new ChannelOutboundHandlerAdapter());
 
-        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this.clientPing, 0, -999);
+        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this.clientPing, ClientPingerOptions.range(0, -999));
+
         pinger.registerPlayer(this.player);
 
         PingData pingData = pinger.getPingData(this.player).orElseThrow(IllegalStateException::new);
@@ -140,7 +143,8 @@ public class ClientPingerTests {
     @Test
     @Order(3)
     public void testClientPingerListener() {
-        ClientPingerImpl pinger = new ClientPingerImpl(this.clientPing, 0, -999);
+        ClientPingerImpl pinger = new ClientPingerImpl(this.clientPing, ClientPingerOptions.range(0, -999));
+
         pinger.registerPlayer(this.player);
 
         PingData pingData = pinger.getPingData(this.player).orElseThrow(IllegalStateException::new);
@@ -171,7 +175,8 @@ public class ClientPingerTests {
     public void testFrameClientPingerListener() {
         this.channel.pipeline().addFirst("prepender", new ChannelOutboundHandlerAdapter());
 
-        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this.clientPing, 0, -999);
+        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this.clientPing, ClientPingerOptions.range(0, -999));
+
         pinger.registerPlayer(this.player);
 
         PingData pingData = pinger.getPingData(this.player).orElseThrow(IllegalStateException::new);

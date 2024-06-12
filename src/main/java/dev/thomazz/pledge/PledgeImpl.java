@@ -9,6 +9,7 @@ import dev.thomazz.pledge.packet.PacketProviderFactory;
 import dev.thomazz.pledge.packet.PingPacketProvider;
 import dev.thomazz.pledge.pinger.ClientPinger;
 import dev.thomazz.pledge.pinger.ClientPingerImpl;
+import dev.thomazz.pledge.pinger.ClientPingerOptions;
 import dev.thomazz.pledge.pinger.frame.FrameClientPinger;
 import dev.thomazz.pledge.pinger.frame.FrameClientPingerImpl;
 import dev.thomazz.pledge.util.ChannelAccess;
@@ -158,15 +159,16 @@ public class PledgeImpl implements Pledge, Listener {
     }
 
     @Override
-    public ClientPinger createPinger(int startId, int endId) {
-        ClientPingerImpl pinger = new ClientPingerImpl(this, startId, endId);
+    public ClientPinger createPinger(ClientPingerOptions options) {
+        ClientPingerImpl pinger = new ClientPingerImpl(this, options);
+
         this.clientPingers.add(pinger);
         return pinger;
     }
 
     @Override
-    public FrameClientPinger createFramePinger(int startId, int endId) {
-        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this, startId, endId);
+    public FrameClientPinger createFramePinger(ClientPingerOptions options) {
+        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this, options);
         this.clientPingers.add(pinger);
         return pinger;
     }
