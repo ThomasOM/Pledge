@@ -83,11 +83,13 @@ public class PledgeImpl implements Pledge, Listener {
         this.clientPingers.forEach(pinger -> pinger.registerPlayer(player));
     }
 
-    private void teardownPlayer(Player player) {
+    private void teardownPlayer(Player player, boolean cleanPipeline) {
         Channel channel = this.playerChannels.remove(player);
 
         // Eject pong listener
-        channel.pipeline().remove(NetworkPongListener.class);
+        if (cleanPipeline && channel.pipeline().get(NetworkPongListener.class) != null) {
+            channel.pipeline().remove(NetworkPongListener.class);
+        }
 
         // Unregister from client pingers
         this.clientPingers.forEach(pinger -> pinger.unregisterPlayer(player));
@@ -100,7 +102,7 @@ public class PledgeImpl implements Pledge, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     void onPlayerQuit(PlayerQuitEvent event) {
-        this.teardownPlayer(event.getPlayer());
+        this.teardownPlayer(event.getPlayer(), false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -180,7 +182,7 @@ public class PledgeImpl implements Pledge, Listener {
         }
 
         // Teardown for all players
-        Bukkit.getOnlinePlayers().forEach(this::teardownPlayer);
+        Bukkit.getOnlinePlayers().forEach(player -> this.teardownPlayer(player, true));
 
         HandlerList.unregisterAll(this);
         this.startTask.cancel();
