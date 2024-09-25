@@ -17,13 +17,13 @@ This guarantees the client has processed the data between the responses for thes
 Pledge works by sending ping or transaction packets to track data being received by a client.
 Several ways of achieving this are provided by Pledge.
 
-You can manually send pings to and receive pings from a client, schedule pings to be sent every tick,
-and even use a managed solution that uses frames to limit the amount of pings sent.
+You can manually send pings to and receive pings from a client,
+or use a scheduler to send pings automatically at the start and end of the tick.
 
 For extra information, please check out the javadoc added to the API interfaces.
 
 # Examples
-Sending pings
+Sending and listening to pings
 ```java
 public class ExamplePlugin extends JavaPlugin implements Listener {
     private Pledge pledge;
@@ -51,7 +51,7 @@ public class ExamplePlugin extends JavaPlugin implements Listener {
 }
 ```
 
-Client Pinger
+Client Pinger (Scheduling)
 ```java
 public class ExamplePlugin extends JavaPlugin implements ClientPingerListener {
     private Pledge pledge;
@@ -86,40 +86,6 @@ public class ExamplePlugin extends JavaPlugin implements ClientPingerListener {
 ```
 
 
-Frame Client Pinger
-
-```java
-import dev.thomazz.pledge.pinger.ClientPingerOptions;
-
-public class ExamplePlugin extends JavaPlugin implements FrameClientPingerListener {
-    private Pledge pledge;
-
-    @Override
-    public void onEnable() {
-        this.pledge = Pledge.getOrCreate(this); // Create or get when already registered to another plugin
-        FrameClientPinger pinger = this.pledge.createFramePinger(ClientPingerOptions.range(-1, -200)); // Ping ids range from -1 to -200
-        pinger.attach(this); // Attach listener to pinger
-        Bukkit.getScheduler().runTaskTimer(this, () -> Bukkit.getOnlinePlayers().forEach(pinger::getOrCreate), 20L, 20L); // Create a frame every second
-    }
-
-    @Override
-    public void onFrameSend(Player player, Frame frame) {
-        Bukkit.broadcastMessage("Sent frame: " + frame);
-    }
-
-    @Override
-    public void onFrameReceiveStart(Player player, Frame frame) {
-        Bukkit.broadcastMessage("Received first pong for frame: " + frame);
-    }
-
-    @Override
-    public void onFrameReceiveEnd(Player player, Frame frame) {
-        Bukkit.broadcastMessage("Received second pong for frame: " + frame);
-    }
-}
-```
-
-
 # Important notes
 Pledge only tracks packets when in play state.
 This is because ping or transaction packets are only available while in this state.
@@ -143,7 +109,7 @@ If you want to use this in your project, you can add it as a Maven dependency:
   <dependency>
     <groupId>dev.thomazz</groupId>
     <artifactId>pledge</artifactId>
-    <version>3.5</version>
+    <version>3.6</version>
   </dependency>
 </dependencies>
 ```
