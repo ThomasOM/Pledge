@@ -1,6 +1,5 @@
-package dev.thomazz.pledge.packet.providers;
+package dev.thomazz.pledge.packet.ping;
 
-import dev.thomazz.pledge.packet.PingPacketProvider;
 import dev.thomazz.pledge.util.MinecraftReflection;
 import dev.thomazz.pledge.util.ReflectionUtil;
 

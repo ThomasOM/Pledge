@@ -4,14 +4,12 @@ import dev.thomazz.pledge.event.PingSendEvent;
 import dev.thomazz.pledge.event.PongReceiveEvent;
 import dev.thomazz.pledge.event.TickEndEvent;
 import dev.thomazz.pledge.event.TickStartEvent;
-import dev.thomazz.pledge.network.NetworkPongListener;
-import dev.thomazz.pledge.packet.PacketProviderFactory;
-import dev.thomazz.pledge.packet.PingPacketProvider;
+import dev.thomazz.pledge.network.NetworkPongHandler;
+import dev.thomazz.pledge.packet.ping.PingPacketProviderFactory;
+import dev.thomazz.pledge.packet.ping.PingPacketProvider;
 import dev.thomazz.pledge.pinger.ClientPinger;
 import dev.thomazz.pledge.pinger.ClientPingerImpl;
 import dev.thomazz.pledge.pinger.ClientPingerOptions;
-import dev.thomazz.pledge.pinger.frame.FrameClientPinger;
-import dev.thomazz.pledge.pinger.frame.FrameClientPingerImpl;
 import dev.thomazz.pledge.util.ChannelAccess;
 import dev.thomazz.pledge.util.ChannelUtils;
 import dev.thomazz.pledge.util.TickEndTask;
@@ -53,7 +51,7 @@ public class PledgeImpl implements Pledge, Listener {
 
     PledgeImpl(Plugin plugin) {
         this.logger = plugin.getLogger();
-        this.packetProvider = PacketProviderFactory.buildPingProvider();
+        this.packetProvider = PingPacketProviderFactory.buildPingProvider();
 
         PluginManager manager = Bukkit.getPluginManager();
         BukkitScheduler scheduler = Bukkit.getScheduler();
@@ -76,7 +74,7 @@ public class PledgeImpl implements Pledge, Listener {
         channel.pipeline().addBefore(
             "packet_handler",
             "pledge_packet_listener",
-            new NetworkPongListener(this, player)
+            new NetworkPongHandler(this, player)
         );
 
         // Register to client pingers
@@ -87,8 +85,8 @@ public class PledgeImpl implements Pledge, Listener {
         Channel channel = this.playerChannels.remove(player);
 
         // Eject pong listener
-        if (cleanPipeline && channel.pipeline().get(NetworkPongListener.class) != null) {
-            channel.pipeline().remove(NetworkPongListener.class);
+        if (cleanPipeline && channel.pipeline().get(NetworkPongHandler.class) != null) {
+            channel.pipeline().remove(NetworkPongHandler.class);
         }
 
         // Unregister from client pingers
@@ -117,16 +115,7 @@ public class PledgeImpl implements Pledge, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     void onPongReceive(PongReceiveEvent event) {
-        Player player = event.getPlayer();
-        int id = event.getId();
-
-        this.clientPingers.stream()
-            .filter(pinger -> pinger.isInRange(id))
-            .forEach(
-                pinger -> pinger.getPingData(player)
-                    .flatMap(data -> data.confirm(id))
-                    .ifPresent(pong -> pinger.onReceive(player, pong))
-            );
+        this.clientPingers.forEach(pinger -> pinger.receivePong(event.getPlayer(), event.getId()));
     }
 
     @Override
@@ -161,16 +150,8 @@ public class PledgeImpl implements Pledge, Listener {
     }
 
     @Override
-    public ClientPinger createPinger(ClientPingerOptions options) {
+    public ClientPinger createPinger(@NotNull ClientPingerOptions options) {
         ClientPingerImpl pinger = new ClientPingerImpl(this, options);
-
-        this.clientPingers.add(pinger);
-        return pinger;
-    }
-
-    @Override
-    public FrameClientPinger createFramePinger(ClientPingerOptions options) {
-        FrameClientPingerImpl pinger = new FrameClientPingerImpl(this, options);
         this.clientPingers.add(pinger);
         return pinger;
     }

@@ -1,8 +1,8 @@
 package dev.thomazz.pledge.pinger;
 
 import dev.thomazz.pledge.PledgeImpl;
-import dev.thomazz.pledge.network.NetworkPacketConsolidator;
-import dev.thomazz.pledge.packet.PingPacketProvider;
+import dev.thomazz.pledge.network.NetworkPingHandler;
+import dev.thomazz.pledge.packet.ping.PingPacketProvider;
 import dev.thomazz.pledge.pinger.data.Ping;
 import dev.thomazz.pledge.pinger.data.PingData;
 import dev.thomazz.pledge.pinger.data.PingOrder;
@@ -24,9 +24,10 @@ public class ClientPingerImpl implements ClientPinger {
     protected final List<ClientPingerListener> pingListeners = new ArrayList<>();
 
     protected final PledgeImpl api;
+
     protected final int startId;
     protected final int endId;
-    protected final boolean consolidate;
+    protected final boolean consolidating;
 
     protected Predicate<Player> playerFilter = player -> true;
 
@@ -39,7 +40,7 @@ public class ClientPingerImpl implements ClientPinger {
 
         this.startId = Math.max(Math.min(upperBound, options.getStartId()), lowerBound);
         this.endId = Math.max(Math.min(upperBound, options.getEndId()), lowerBound);
-        this.consolidate = options.isConsolidatePackets();
+        this.consolidating = options.isConsolidatePackets();
 
         if (this.startId != options.getStartId()) {
             this.api.getLogger().warning("Changed start ID to fit bounds: " + startId + " -> " + this.startId);
@@ -70,10 +71,18 @@ public class ClientPingerImpl implements ClientPinger {
         this.pingListeners.add(listener);
     }
 
+    public boolean isInRange(int id) {
+        return id >= Math.min(this.startId, this.endId) && id <= Math.max(this.startId, this.endId);
+    }
+
+    public Optional<PingData> getPingData(Player player) {
+        return Optional.ofNullable(this.pingDataMap.get(player));
+    }
+
     public void registerPlayer(Player player) {
         if (this.playerFilter.test(player)) {
             this.injectPlayer(player);
-            this.pingDataMap.put(player, new PingData(player,this));
+            this.pingDataMap.put(player, new PingData(this, player));
         }
     }
 
@@ -82,34 +91,29 @@ public class ClientPingerImpl implements ClientPinger {
         this.ejectPlayer(player);
     }
 
-    protected void injectPlayer(Player player) {
-        // Only inject consolidator when necessary
-        if (!this.consolidate) {
-            return;
-        }
-
+    private void injectPlayer(Player player) {
         this.api.getChannel(player).ifPresent(channel ->
-            ChannelUtils.runInEventLoop(channel,
-                () -> channel.pipeline().addLast("pledge_tick_consolidator", new NetworkPacketConsolidator())
+            ChannelUtils.runInEventLoop(
+                channel,
+                () -> channel.pipeline().addLast(
+                    "pledge_tick_consolidator",
+                    new NetworkPingHandler(this.consolidating)
+                )
             )
         );
     }
 
-    protected void ejectPlayer(Player player) {
-        // Only inject consolidator when necessary
-        if (!this.consolidate) {
-            return;
-        }
-
+    private void ejectPlayer(Player player) {
         this.api.getChannel(player).ifPresent(channel ->
-            ChannelUtils.runInEventLoop(channel,
-                () -> channel.pipeline().remove(NetworkPacketConsolidator.class)
+            ChannelUtils.runInEventLoop(
+                channel,
+                () -> channel.pipeline().remove(NetworkPingHandler.class)
             )
         );
     }
 
-    // Note: Should run in channel event loop
-    protected void ping(Player player, Channel channel, Ping ping) {
+    private void sendPing(Player player, Channel channel, Ping ping) {
+        // Should always run in channel event loop
         if (!channel.eventLoop().inEventLoop()) {
             throw new IllegalStateException("Tried to run ping outside event loop!");
         }
@@ -119,15 +123,19 @@ public class ClientPingerImpl implements ClientPinger {
         this.onSend(player, ping);
     }
 
-    public boolean isInRange(int id) {
-        return id >= Math.min(this.startId, this.endId) && id <= Math.max(this.startId, this.endId);
+    public void receivePong(Player player, int id) {
+        // Check if in range first
+        if (!this.isInRange(id)) {
+            return;
+        }
+
+        // Get
+        this.getPingData(player)
+            .flatMap(data -> data.confirm(id))
+            .ifPresent(pong -> this.onReceive(player, pong));
     }
 
-    public Optional<PingData> getPingData(Player player) {
-        return Optional.of(this.pingDataMap.get(player));
-    }
-
-    protected void onSend(Player player, Ping ping) {
+    private void onSend(Player player, Ping ping) {
         switch (ping.getOrder()) {
             case TICK_START:
                 this.onSendStart(player, ping.getId());
@@ -166,41 +174,46 @@ public class ClientPingerImpl implements ClientPinger {
     }
 
     public void tickStart() {
-        // Only inject consolidator when necessary
-        if (!this.consolidate) {
-            return;
+        for (PingData data : this.pingDataMap.values()) {
+            this.api.getChannel(data.getPlayer()).ifPresent(channel ->
+                ChannelUtils.runInEventLoop(channel, () -> this.tickStartPingData(data, channel))
+            );
         }
-
-        this.pingDataMap.forEach((player, data) ->
-            this.api.getChannel(player).ifPresent(channel ->
-                ChannelUtils.runInEventLoop(channel, () -> {
-                    NetworkPacketConsolidator consolidator = channel.pipeline().get(NetworkPacketConsolidator.class);
-                    if (consolidator != null) {
-                        consolidator.open();
-                        this.ping(player, channel, new Ping(PingOrder.TICK_START, data.pullId()));
-                        consolidator.drain(channel.pipeline().lastContext());
-                    }
-                })
-            )
-        );
     }
 
     public void tickEnd() {
-        // Only inject consolidator when necessary
-        if (!this.consolidate) {
+        for (PingData data : this.pingDataMap.values()) {
+            this.api.getChannel(data.getPlayer()).ifPresent(channel ->
+                ChannelUtils.runInEventLoop(channel, () -> this.tickEndPingData(data, channel))
+            );
+        }
+    }
+
+    private void tickStartPingData(PingData data, Channel channel) {
+        NetworkPingHandler pingHandler = channel.pipeline().get(NetworkPingHandler.class);
+        if (pingHandler == null) {
             return;
         }
 
-        this.pingDataMap.forEach((player, data) ->
-            this.api.getChannel(player).ifPresent(channel ->
-                ChannelUtils.runInEventLoop(channel, () -> {
-                    NetworkPacketConsolidator consolidator = channel.pipeline().get(NetworkPacketConsolidator.class);
-                    if (consolidator != null) {
-                        this.ping(player, channel, new Ping(PingOrder.TICK_END, data.pullId()));
-                        consolidator.close();
-                    }
-                })
-            )
-        );
+        if (pingHandler.isConsolidating()) {
+            pingHandler.open();
+            this.sendPing(data.getPlayer(), channel, new Ping(PingOrder.TICK_START, data.pullId()));
+            pingHandler.drain(channel.pipeline().lastContext());
+        } else {
+            this.sendPing(data.getPlayer(), channel, new Ping(PingOrder.TICK_START, data.pullId()));
+        }
+    }
+
+    private void tickEndPingData(PingData data, Channel channel) {
+        NetworkPingHandler pingHandler = channel.pipeline().get(NetworkPingHandler.class);
+        if (pingHandler == null) {
+            return;
+        }
+
+        this.sendPing(data.getPlayer(), channel, new Ping(PingOrder.TICK_END, data.pullId()));
+
+        if (pingHandler.isConsolidating()) {
+            pingHandler.close();
+        }
     }
 }

@@ -1,8 +1,6 @@
-package dev.thomazz.pledge.packet;
+package dev.thomazz.pledge.packet.ping;
 
 import com.google.common.collect.ImmutableSet;
-import dev.thomazz.pledge.packet.providers.PingPongPacketProvider;
-import dev.thomazz.pledge.packet.providers.TransactionPacketProvider;
 import lombok.experimental.UtilityClass;
 
 import java.util.Optional;
@@ -10,15 +8,15 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @UtilityClass
-public class PacketProviderFactory {
+public class PingPacketProviderFactory {
     private final Set<ThrowingSupplier<PingPacketProvider>> suppliers = ImmutableSet.of(
         TransactionPacketProvider::new,
         PingPongPacketProvider::new
     );
 
     public PingPacketProvider buildPingProvider() {
-        return PacketProviderFactory.suppliers.stream()
-            .map(PacketProviderFactory::buildProvider)
+        return PingPacketProviderFactory.suppliers.stream()
+            .map(PingPacketProviderFactory::buildProvider)
             .flatMap(optional -> optional.map(Stream::of).orElseGet(Stream::empty))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Could not create packet provider!"));

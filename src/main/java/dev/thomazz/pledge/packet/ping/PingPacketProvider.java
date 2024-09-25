@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.packet;
+package dev.thomazz.pledge.packet.ping;
 
 public interface PingPacketProvider {
     Object buildPacket(int id) throws Exception;
