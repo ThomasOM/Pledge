@@ -27,6 +27,11 @@ public class MinecraftReflection {
         } catch (Exception ignored) {
         }
 
+        try {
+            return Class.forName("net.minecraft.network.protocol." + className); // Bundle packet location
+        } catch (Exception ignored) {
+        }
+
         throw new ClassNotFoundException("Game packet class not found!");
     }
 

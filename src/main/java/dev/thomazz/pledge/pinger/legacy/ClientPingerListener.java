@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.pinger;
+package dev.thomazz.pledge.pinger.legacy;
 
 import org.bukkit.entity.Player;
 
@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
  */
 public interface ClientPingerListener {
     /**
-     * Called when a player receives the first transaction ID of the {@link ClientPinger}.
+     * Called when a player receives the first ping ID of the {@link ClientPinger}.
      * After this the player can be considered active on the server.
      * <p>
      * @param player - Player that the ping response is received from

@@ -1,12 +1,13 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.packet.ping.PingPacketProvider;
-import dev.thomazz.pledge.pinger.ClientPingerImpl;
-import dev.thomazz.pledge.pinger.ClientPingerListener;
-import dev.thomazz.pledge.pinger.ClientPingerOptions;
-import dev.thomazz.pledge.pinger.data.PingData;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerImpl;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerListener;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerOptions;
+import dev.thomazz.pledge.pinger.legacy.data.PingData;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetAddress;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -52,13 +54,13 @@ public class ClientPingerTests {
     public void testClientPinger() {
         ClientPingerImpl pinger = new ClientPingerImpl(this.clientPing, ClientPingerOptions.range(0, -999));
 
-        pinger.registerPlayer(this.player);
+        pinger.onPlayerLogin(new PlayerLoginEvent(this.player, "", InetAddress.getLoopbackAddress()));
 
         PingData pingData = pinger.getPingData(this.player).orElseThrow(IllegalStateException::new);
 
         for (int i = 0; i < 200; i++) {
-            pinger.tickStart();
-            pinger.tickEnd();
+            pinger.onTickStart(null);
+            pinger.onTickEnd(null);
             this.channel.runPendingTasks();
         }
 
@@ -72,8 +74,8 @@ public class ClientPingerTests {
         }
 
         for (int i = 0; i < 400; i++) {
-            pinger.tickStart();
-            pinger.tickEnd();
+            pinger.onTickStart(null);
+            pinger.onTickEnd(null);
             this.channel.runPendingTasks();
         }
 
@@ -86,7 +88,7 @@ public class ClientPingerTests {
     public void testClientPingerListener() {
         ClientPingerImpl pinger = new ClientPingerImpl(this.clientPing, ClientPingerOptions.range(0, -999));
 
-        pinger.registerPlayer(this.player);
+        pinger.onPlayerLogin(new PlayerLoginEvent(this.player, "", InetAddress.getLoopbackAddress()));
 
         PingData pingData = pinger.getPingData(this.player).orElseThrow(IllegalStateException::new);
 
@@ -94,8 +96,8 @@ public class ClientPingerTests {
         pinger.attach(listener);
 
         for (int i = 0; i < 2; i++) {
-            pinger.tickStart();
-            pinger.tickEnd();
+            pinger.onTickStart(null);
+            pinger.onTickEnd(null);
             this.channel.runPendingTasks();
         }
 

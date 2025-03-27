@@ -1,4 +1,4 @@
-package dev.thomazz.pledge.pinger.data;
+package dev.thomazz.pledge.pinger.legacy.data;
 
 import lombok.Data;
 

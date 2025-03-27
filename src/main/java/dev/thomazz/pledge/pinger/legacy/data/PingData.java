@@ -1,6 +1,6 @@
-package dev.thomazz.pledge.pinger.data;
+package dev.thomazz.pledge.pinger.legacy.data;
 
-import dev.thomazz.pledge.pinger.ClientPingerImpl;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerImpl;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 

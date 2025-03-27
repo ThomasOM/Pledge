@@ -1,15 +1,24 @@
-package dev.thomazz.pledge.pinger;
+package dev.thomazz.pledge.pinger.legacy;
 
 import dev.thomazz.pledge.PledgeImpl;
+import dev.thomazz.pledge.event.PongReceiveEvent;
+import dev.thomazz.pledge.event.TickEndEvent;
+import dev.thomazz.pledge.event.TickStartEvent;
 import dev.thomazz.pledge.network.NetworkPingHandler;
 import dev.thomazz.pledge.packet.ping.PingPacketProvider;
-import dev.thomazz.pledge.pinger.data.Ping;
-import dev.thomazz.pledge.pinger.data.PingData;
-import dev.thomazz.pledge.pinger.data.PingOrder;
+import dev.thomazz.pledge.pinger.legacy.data.Ping;
+import dev.thomazz.pledge.pinger.legacy.data.PingData;
+import dev.thomazz.pledge.pinger.legacy.data.PingOrder;
 import dev.thomazz.pledge.util.ChannelUtils;
 import io.netty.channel.Channel;
 import lombok.Getter;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,17 +28,17 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 @Getter
-public class ClientPingerImpl implements ClientPinger {
-    protected final Map<Player, PingData> pingDataMap = new LinkedHashMap<>();
-    protected final List<ClientPingerListener> pingListeners = new ArrayList<>();
+public class ClientPingerImpl implements ClientPinger, Listener {
+    private final Map<Player, PingData> pingDataMap = new LinkedHashMap<>();
+    private final List<ClientPingerListener> pingListeners = new ArrayList<>();
 
-    protected final PledgeImpl api;
+    private final PledgeImpl api;
 
-    protected final int startId;
-    protected final int endId;
-    protected final boolean consolidating;
+    private final int startId;
+    private final int endId;
+    private final boolean consolidating;
 
-    protected Predicate<Player> playerFilter = player -> true;
+    private Predicate<Player> playerFilter = player -> true;
 
     public ClientPingerImpl(PledgeImpl api, ClientPingerOptions options) {
         this.api = api;
@@ -43,12 +52,64 @@ public class ClientPingerImpl implements ClientPinger {
         this.consolidating = options.isConsolidatePackets();
 
         if (this.startId != options.getStartId()) {
-            this.api.getLogger().warning("Changed start ID to fit bounds: " + startId + " -> " + this.startId);
+            this.api.getLogger().warning("Changed start ID to fit bounds: " + options.getStartId() + " -> " + this.startId);
         }
 
         if (this.endId != options.getEndId()) {
-            this.api.getLogger().warning("Changed end ID to fit bounds: " + endId + " -> " + this.endId);
+            this.api.getLogger().warning("Changed end ID to fit bounds: " + options.getEndId() + " -> " + this.endId);
         }
+
+        this.api.registerListener(this);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerLogin(PlayerLoginEvent event) {
+        Player player = event.getPlayer();
+        if (this.playerFilter.test(player)) {
+            this.injectPlayer(player);
+            this.pingDataMap.put(player, new PingData(this, player));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        this.pingDataMap.remove(player);
+        this.ejectPlayer(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTickStart(TickStartEvent ignored) {
+        for (PingData data : this.pingDataMap.values()) {
+            this.api.getChannel(data.getPlayer()).ifPresent(channel ->
+                ChannelUtils.runInEventLoop(channel, () -> this.tickStartPingData(data, channel))
+            );
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTickEnd(TickEndEvent ignored) {
+        for (PingData data : this.pingDataMap.values()) {
+            this.api.getChannel(data.getPlayer()).ifPresent(channel ->
+                ChannelUtils.runInEventLoop(channel, () -> this.tickEndPingData(data, channel))
+            );
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPongReceive(PongReceiveEvent event) {
+        Player player = event.getPlayer();
+        int id = event.getId();
+
+        // Check if in range first
+        if (!this.isInRange(id)) {
+            return;
+        }
+
+        // Get
+        this.getPingData(player)
+            .flatMap(data -> data.confirm(id))
+            .ifPresent(pong -> this.onReceive(player, pong));
     }
 
     @Override
@@ -59,6 +120,11 @@ public class ClientPingerImpl implements ClientPinger {
     @Override
     public int endId() {
         return this.endId;
+    }
+
+    @Override
+    public void destroy() {
+        HandlerList.unregisterAll(this);
     }
 
     @Override
@@ -77,18 +143,6 @@ public class ClientPingerImpl implements ClientPinger {
 
     public Optional<PingData> getPingData(Player player) {
         return Optional.ofNullable(this.pingDataMap.get(player));
-    }
-
-    public void registerPlayer(Player player) {
-        if (this.playerFilter.test(player)) {
-            this.injectPlayer(player);
-            this.pingDataMap.put(player, new PingData(this, player));
-        }
-    }
-
-    public void unregisterPlayer(Player player) {
-        this.pingDataMap.remove(player);
-        this.ejectPlayer(player);
     }
 
     private void injectPlayer(Player player) {
@@ -121,18 +175,6 @@ public class ClientPingerImpl implements ClientPinger {
         this.api.sendPingRaw(player, channel, ping.getId());
         this.getPingData(player).ifPresent(data -> data.offer(ping));
         this.onSend(player, ping);
-    }
-
-    public void receivePong(Player player, int id) {
-        // Check if in range first
-        if (!this.isInRange(id)) {
-            return;
-        }
-
-        // Get
-        this.getPingData(player)
-            .flatMap(data -> data.confirm(id))
-            .ifPresent(pong -> this.onReceive(player, pong));
     }
 
     private void onSend(Player player, Ping ping) {
@@ -171,22 +213,6 @@ public class ClientPingerImpl implements ClientPinger {
 
     protected void onReceiveEnd(Player player, int id) {
         this.pingListeners.forEach(listener -> listener.onPongReceiveEnd(player, id));
-    }
-
-    public void tickStart() {
-        for (PingData data : this.pingDataMap.values()) {
-            this.api.getChannel(data.getPlayer()).ifPresent(channel ->
-                ChannelUtils.runInEventLoop(channel, () -> this.tickStartPingData(data, channel))
-            );
-        }
-    }
-
-    public void tickEnd() {
-        for (PingData data : this.pingDataMap.values()) {
-            this.api.getChannel(data.getPlayer()).ifPresent(channel ->
-                ChannelUtils.runInEventLoop(channel, () -> this.tickEndPingData(data, channel))
-            );
-        }
     }
 
     private void tickStartPingData(PingData data, Channel channel) {

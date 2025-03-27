@@ -1,28 +1,14 @@
-package dev.thomazz.pledge.pinger;
+package dev.thomazz.pledge.pinger.legacy;
 
+import dev.thomazz.pledge.pinger.Pinger;
 import org.bukkit.entity.Player;
 
 import java.util.function.Predicate;
 
 /**
- * Utility to send pings automatically and the start and end of a tick.
- * Several events can be listened to through a {@link ClientPingerListener}, such as when pings are sent and received.
+ * Several events can be listened to with a {@link ClientPingerListener}, such as when pings are sent and received.
  */
-public interface ClientPinger {
-    /**
-     * Start of the ID range for pings used by this instance.
-     * <p>
-     * @return - Start ID
-     */
-    int startId();
-
-    /**
-     * End of the ID range for pings used by this instance.
-     * <p>
-     * @return - End ID
-     */
-    int endId();
-
+public interface ClientPinger extends Pinger {
     /**
      * Determines if a player should be registered to this {@link ClientPinger}
      * Always registers players by default unless a different predicate is provided.

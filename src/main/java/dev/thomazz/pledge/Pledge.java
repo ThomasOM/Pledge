@@ -1,7 +1,9 @@
 package dev.thomazz.pledge;
 
-import dev.thomazz.pledge.pinger.ClientPinger;
-import dev.thomazz.pledge.pinger.ClientPingerOptions;
+import dev.thomazz.pledge.pinger.PingerOptions;
+import dev.thomazz.pledge.pinger.bundle.BundlePinger;
+import dev.thomazz.pledge.pinger.legacy.ClientPinger;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerOptions;
 import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -30,6 +32,16 @@ public interface Pledge {
      */
     Optional<Channel> getChannel(@NotNull Player player);
 
+
+    /**
+     * Creates a bundle pinger.
+     * See documentation in {@link BundlePinger} for more info.
+     * <p>
+     * @param options - Options
+     * @return        - Bundle pinger instance
+     */
+    BundlePinger createPinger(@NotNull PingerOptions options);
+
     /**
      * Creates a client pinger.
      * See documentation in {@link ClientPinger} for more info.
@@ -37,6 +49,7 @@ public interface Pledge {
      * @param options - Options
      * @return        - Client pinger instance
      */
+    @Deprecated
     ClientPinger createPinger(@NotNull ClientPingerOptions options);
 
     /**

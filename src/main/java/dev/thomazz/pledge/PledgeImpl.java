@@ -1,15 +1,18 @@
 package dev.thomazz.pledge;
 
 import dev.thomazz.pledge.event.PingSendEvent;
-import dev.thomazz.pledge.event.PongReceiveEvent;
 import dev.thomazz.pledge.event.TickEndEvent;
 import dev.thomazz.pledge.event.TickStartEvent;
 import dev.thomazz.pledge.network.NetworkPongHandler;
 import dev.thomazz.pledge.packet.ping.PingPacketProviderFactory;
 import dev.thomazz.pledge.packet.ping.PingPacketProvider;
-import dev.thomazz.pledge.pinger.ClientPinger;
-import dev.thomazz.pledge.pinger.ClientPingerImpl;
-import dev.thomazz.pledge.pinger.ClientPingerOptions;
+import dev.thomazz.pledge.pinger.Pinger;
+import dev.thomazz.pledge.pinger.PingerOptions;
+import dev.thomazz.pledge.pinger.bundle.BundlePinger;
+import dev.thomazz.pledge.pinger.bundle.BundlePingerImpl;
+import dev.thomazz.pledge.pinger.legacy.ClientPinger;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerImpl;
+import dev.thomazz.pledge.pinger.legacy.ClientPingerOptions;
 import dev.thomazz.pledge.util.ChannelAccess;
 import dev.thomazz.pledge.util.ChannelUtils;
 import dev.thomazz.pledge.util.TickEndTask;
@@ -19,7 +22,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -40,16 +42,18 @@ import java.util.logging.Logger;
 public class PledgeImpl implements Pledge, Listener {
     static PledgeImpl instance;
 
+    private final Plugin plugin;
     private final Logger logger;
     private final PingPacketProvider packetProvider;
 
     private final BukkitTask startTask;
     private final TickEndTask endTask;
 
-    private final List<ClientPingerImpl> clientPingers = new ArrayList<>();
+    private final List<Pinger> pingers = new ArrayList<>();
     private final Map<Player, Channel> playerChannels = new HashMap<>();
 
     PledgeImpl(Plugin plugin) {
+        this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.packetProvider = PingPacketProviderFactory.buildPingProvider();
 
@@ -76,9 +80,6 @@ public class PledgeImpl implements Pledge, Listener {
             "pledge_packet_listener",
             new NetworkPongHandler(this, player)
         );
-
-        // Register to client pingers
-        this.clientPingers.forEach(pinger -> pinger.registerPlayer(player));
     }
 
     private void teardownPlayer(Player player, boolean cleanPipeline) {
@@ -88,34 +89,16 @@ public class PledgeImpl implements Pledge, Listener {
         if (cleanPipeline && channel.pipeline().get(NetworkPongHandler.class) != null) {
             channel.pipeline().remove(NetworkPongHandler.class);
         }
-
-        // Unregister from client pingers
-        this.clientPingers.forEach(pinger -> pinger.unregisterPlayer(player));
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGHEST)
     void onPlayerLogin(PlayerLoginEvent event) {
         this.setupPlayer(event.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGHEST)
     void onPlayerQuit(PlayerQuitEvent event) {
         this.teardownPlayer(event.getPlayer(), false);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    void onTickStart(TickStartEvent ignored) {
-        this.clientPingers.forEach(ClientPingerImpl::tickStart);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    void onTickStart(TickEndEvent ignored) {
-        this.clientPingers.forEach(ClientPingerImpl::tickEnd);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    void onPongReceive(PongReceiveEvent event) {
-        this.clientPingers.forEach(pinger -> pinger.receivePong(event.getPlayer(), event.getId()));
     }
 
     @Override
@@ -144,15 +127,26 @@ public class PledgeImpl implements Pledge, Listener {
         }
     }
 
+    public void registerListener(Listener listener) {
+        this.plugin.getServer().getPluginManager().registerEvents(listener, this.plugin);
+    }
+
     @Override
     public Optional<Channel> getChannel(@NotNull Player player) {
         return Optional.ofNullable(this.playerChannels.get(player));
     }
 
     @Override
+    public BundlePinger createPinger(@NotNull PingerOptions options) {
+        BundlePinger pinger = new BundlePingerImpl(this, options);
+        this.pingers.add(pinger);
+        return pinger;
+    }
+
+    @Override
     public ClientPinger createPinger(@NotNull ClientPingerOptions options) {
-        ClientPingerImpl pinger = new ClientPingerImpl(this, options);
-        this.clientPingers.add(pinger);
+        ClientPinger pinger = new ClientPingerImpl(this, options);
+        this.pingers.add(pinger);
         return pinger;
     }
 
@@ -165,7 +159,8 @@ public class PledgeImpl implements Pledge, Listener {
         // Teardown for all players
         Bukkit.getOnlinePlayers().forEach(player -> this.teardownPlayer(player, true));
 
-        HandlerList.unregisterAll(this);
+        this.pingers.forEach(Pinger::destroy);
+
         this.startTask.cancel();
         this.endTask.cancel();
 
