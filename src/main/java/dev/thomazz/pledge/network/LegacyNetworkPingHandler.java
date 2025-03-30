@@ -13,7 +13,7 @@ import java.util.Queue;
 // Prevents asynchronously sent packets to land outside the start and end ping interval
 @Getter
 @RequiredArgsConstructor
-public class NetworkPingHandler extends ChannelOutboundHandlerAdapter {
+public class LegacyNetworkPingHandler extends ChannelOutboundHandlerAdapter {
     private final Queue<NetworkMessage> messageQueue = new ArrayDeque<>();
     private final boolean consolidating;
 
@@ -60,5 +60,12 @@ public class NetworkPingHandler extends ChannelOutboundHandlerAdapter {
         }
 
         ctx.flush();
+    }
+
+    @Getter
+    @RequiredArgsConstructor(staticName = "of")
+    private static class NetworkMessage {
+        private final Object message;
+        private final ChannelPromise promise;
     }
 }

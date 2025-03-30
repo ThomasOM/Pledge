@@ -1,15 +1,10 @@
 package dev.thomazz.pledge;
 
+import dev.thomazz.pledge.pinger.Pinger;
 import dev.thomazz.pledge.pinger.PingerOptions;
-import dev.thomazz.pledge.pinger.bundle.BundlePinger;
-import dev.thomazz.pledge.pinger.legacy.ClientPinger;
-import dev.thomazz.pledge.pinger.legacy.ClientPingerOptions;
-import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Optional;
 
 /**
  * Main API object
@@ -25,32 +20,13 @@ public interface Pledge {
     void sendPing(@NotNull Player player, int id);
 
     /**
-     * Gets the networking channel for a {@link Player} if available.
-     * <p>
-     * @param player - Player to get channel for
-     * @return       - Networking channel
-     */
-    Optional<Channel> getChannel(@NotNull Player player);
-
-
-    /**
-     * Creates a bundle pinger.
-     * See documentation in {@link BundlePinger} for more info.
+     * Creates a pinger.
+     * See documentation in {@link Pinger} for more info.
      * <p>
      * @param options - Options
      * @return        - Bundle pinger instance
      */
-    BundlePinger createPinger(@NotNull PingerOptions options);
-
-    /**
-     * Creates a client pinger.
-     * See documentation in {@link ClientPinger} for more info.
-     * <p>
-     * @param options - Options
-     * @return        - Client pinger instance
-     */
-    @Deprecated
-    ClientPinger createPinger(@NotNull ClientPingerOptions options);
+    Pinger createPinger(Player player, @NotNull PingerOptions options);
 
     /**
      * Destroys the API instance.

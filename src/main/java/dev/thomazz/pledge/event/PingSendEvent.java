@@ -10,13 +10,11 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Called when a ping packet is sent to a {@link Player}
- * Note: Executed from netty thread
  */
 @Getter
 @Setter
 public class PingSendEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();
-
     private final Player player;
     private final int id;
     private boolean cancelled = false;

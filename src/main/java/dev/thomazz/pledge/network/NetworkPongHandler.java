@@ -16,7 +16,7 @@ public class NetworkPongHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        PingPacketProvider packetProvider = this.clientPing.getPacketProvider();
+        PingPacketProvider packetProvider = this.clientPing.getPingProvider();
 
         if (packetProvider.isPong(msg)) {
             int id = packetProvider.idFromPong(msg);

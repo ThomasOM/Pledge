@@ -17,9 +17,4 @@ public interface Pinger {
 	 * @return - End ID
 	 */
 	int endId();
-
-	/**
-	 * Destroys the instance.
-	 */
-	void destroy();
 }

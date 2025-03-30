@@ -109,7 +109,7 @@ If you want to use this in your project, you can add it as a Maven dependency:
   <dependency>
     <groupId>dev.thomazz</groupId>
     <artifactId>pledge</artifactId>
-    <version>3.6</version>
+    <version>4.0</version>
   </dependency>
 </dependencies>
 ```

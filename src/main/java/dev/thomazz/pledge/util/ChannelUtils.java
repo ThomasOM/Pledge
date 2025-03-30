@@ -15,4 +15,13 @@ public class ChannelUtils {
             runnable.run();
         }
     }
+
+    public boolean ensureInEventLoop(Channel channel, Runnable runnable) {
+        if (!channel.eventLoop().inEventLoop()) {
+            channel.eventLoop().execute(runnable);
+            return false;
+        }
+
+        return true;
+    }
 }
